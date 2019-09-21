@@ -8,6 +8,7 @@ import {
   UseGuards,
   Delete,
   Patch,
+  Query,
 } from '@nestjs/common';
 import { GroupParams } from '../group/dto/group-params.dto';
 import { PostService } from './post.service';
@@ -18,16 +19,33 @@ import { GetUser } from '../user/decorators/get-user.decorator';
 import { User } from '../user/interfaces/user.interface';
 import { PostParams } from './dto/post-params.dto';
 import { EditPostDto } from './dto/edit-post.dto';
+import { GroupGuard } from '../group/guards/group.guard';
+import { GroupPostQuery } from './dto/group-post.query.dto';
 
+/**
+ * ✔ 1,2. Get post (with and without filter) by group id. for now subject and text filtered
+ * ✔ 3. Create Post by group id
+ * ✔ 4. Create reply post by group id
+ * ✔ 5. Delete post by group id
+ * ✔ 6. Edit post by group id
+ */
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  @Get('/group/:id')
-  getPostsByGroupId(@Param(ValidationPipe) groupParams: GroupParams) {}
-
-  @UseGuards(AuthGuard())
-  @Post('/group/:id')
+  @Get('/group/:gid')
+  getPostsByGroupId(
+    @Param(ValidationPipe) groupParams: GroupParams,
+    @Query() query: GroupPostQuery,
+  ) {
+    if (query.text) {
+      return this.postService.getFilteredPostsByGroupId(groupParams.gid, query);
+    } else {
+      return this.postService.getPostsByGroupId(groupParams.gid);
+    }
+  }
+  @UseGuards(AuthGuard(), GroupGuard)
+  @Post('/group/:gid')
   createPostByGroupId(
     @Param(ValidationPipe) groupParams: GroupParams,
     @Body(ValidationPipe) createPostDto: CreatePostDto,
@@ -35,41 +53,41 @@ export class PostController {
   ) {
     return this.postService.createPostByGroupId(
       createPostDto,
-      groupParams.id,
+      groupParams.gid,
       user,
     );
   }
 
-  @UseGuards(AuthGuard())
-  @Post('/group/:id/replay')
+  @UseGuards(AuthGuard(), GroupGuard)
+  @Post(':pid/group/:gid/replay')
   createReplyPostByGroupId(
-    @Param(ValidationPipe) groupParams: GroupParams,
-    @Body(ValidationPipe) createPostDto: CreateReplyPostDto,
+    @Param(ValidationPipe) postParams: PostParams,
+    @Body(ValidationPipe) createReplyPostDto: CreateReplyPostDto,
     @GetUser() user: User,
   ) {
     return this.postService.createReplayPostByGroupId(
-      createPostDto,
-      groupParams.id,
+      createReplyPostDto,
+      postParams.gid,
       user,
     );
   }
 
-  @UseGuards(AuthGuard())
-  @Delete('/:id')
+  @UseGuards(AuthGuard(), GroupGuard)
+  @Delete('/:pid/group/:gid')
   deletePostById(
     @Param(ValidationPipe) postParams: PostParams,
     @GetUser() user: User,
   ) {
-    return this.postService.deletePostById(postParams.id, user);
+    return this.postService.deletePostById(postParams.pid, user);
   }
 
-  @UseGuards(AuthGuard())
-  @Patch('/:id')
+  @UseGuards(AuthGuard(), GroupGuard)
+  @Patch('/:pid/group/:gid')
   editPostById(
     @Param(ValidationPipe) postParams: PostParams,
     @GetUser() user: User,
     @Body(ValidationPipe) editPostDto: EditPostDto,
   ) {
-    return this.postService.editPostById(editPostDto, postParams.id, user);
+    return this.postService.editPostById(editPostDto, postParams.pid, user);
   }
 }

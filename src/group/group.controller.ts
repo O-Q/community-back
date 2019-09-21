@@ -17,9 +17,9 @@ import { GroupDto } from './dto/group.dto';
 @Controller('group')
 export class GroupController {
   constructor(private groupService: GroupService) {}
-  @Get('/:id')
+  @Get('/:gid')
   getGroupById(@Param(ValidationPipe) groupParams: GroupParams) {
-    return this.groupService.getGroupById(groupParams.id);
+    return this.groupService.getGroupById(groupParams.gid);
   }
 
   @UseGuards(AuthGuard())
@@ -29,11 +29,11 @@ export class GroupController {
   }
 
   @UseGuards(AuthGuard())
-  @Post('/:id/user')
+  @Post('/:gid/user')
   addUserToGroup(
     @Param(ValidationPipe) groupParams: GroupParams,
     @GetUser() user: User,
   ) {
-    return this.groupService.addUserToGroup(groupParams.id, user);
+    return this.groupService.addUserToGroup(groupParams.gid, user);
   }
 }
