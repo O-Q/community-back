@@ -1,13 +1,16 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
-import { UnauthorizedException, Injectable } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  Injectable,
+  BadGatewayException,
+} from '@nestjs/common';
 
 import { jwtConfig } from '../../config/jwt.config';
 import { JwtPayload } from './jwt-payload.interface';
 import { User } from '../../user/interfaces/user.interface';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { DBErrorHandler } from '../../utils/error-handlers/db.handler';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

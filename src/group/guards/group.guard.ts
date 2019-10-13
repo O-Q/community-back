@@ -17,7 +17,6 @@ export class GroupGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest();
-
     const gid = request.params.gid;
 
     const expectedRoles =

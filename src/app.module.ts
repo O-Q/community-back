@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { GroupModule } from './group/group.module';
 import { UserModule } from './user/user.module';
 import { PostModule } from './post/post.module';
+import { EventsModule } from './events/events.module';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PostModule } from './post/post.module';
     GroupModule,
     UserModule,
     PostModule,
+    EventsModule,
   ],
   providers: [],
 })

@@ -65,3 +65,49 @@ export const UserSchema = new Schema(
   },
   { timestamps: true, versionKey: false },
 );
+
+// import {
+//   Entity,
+//   ObjectID,
+//   ObjectIdColumn,
+//   Column,
+//   CreateDateColumn,
+//   UpdateDateColumn,
+// } from 'typeorm';
+
+// @Entity()
+// export class User {
+//   @ObjectIdColumn()
+//   id: ObjectID;
+
+//   @Column({ unique: true, nullable: false })
+//   username: string;
+
+//   @Column()
+//   email: string;
+
+//   @Column({ nullable: false })
+//   password: string;
+
+//   @Column({ unique: true, nullable: false })
+//   phone: number;
+
+//   @Column()
+//   description: string;
+
+//   //todo
+//   @Column()
+//   groups: any;
+
+//   @Column({ enum: UserRole, array: true })
+//   roles: UserRole[];
+
+//   @Column({ enum: UserStatus })
+//   status: UserStatus;
+
+//   @CreateDateColumn({ type: 'timestamp' })
+//   createdAt: Date;
+
+//   @UpdateDateColumn({ type: 'timestamp', nullable: true })
+//   updatedAt: Date;
+// }

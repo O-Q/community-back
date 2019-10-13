@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Post } from './interfaces/post.interface';
@@ -10,6 +10,10 @@ import { EditPostDto } from './dto/edit-post.dto';
 import { GroupUserRole } from '../user/enums/group-user-role.enum';
 import { hasPermissionToAction } from '../utils/functions/role.func';
 import { GroupPostQuery } from './dto/group-post.query.dto';
+import { calcSkippedPage } from '../utils/functions/skip-page.func';
+import { PostSortBy } from './enums/sort-post.enum';
+import moment = require('moment');
+import { PostParams } from './dto/post-params.dto';
 
 /**
  *
@@ -18,14 +22,31 @@ import { GroupPostQuery } from './dto/group-post.query.dto';
 export class PostService {
   constructor(@InjectModel('Post') private readonly postModel: Model<Post>) {}
 
-  async getPostsByGroupId(groupId: string) {
-    return await this.postModel.find({ group: Types.ObjectId(groupId) });
+  /**
+   *
+   * @param groupId the ID of the group
+   * @param queryParams only contains `itemsPerPage` and `page`. sortBy is optional.
+   * default sortBy is `NEWEST`.
+   */
+  async getPostsByGroupId(groupId: string, queryParams: GroupPostQuery) {
+    const skipped = calcSkippedPage(queryParams.itemsPerPage, queryParams.page);
+    const sortBy = queryParams.sortBy;
+    const notRepliedPost = { replayTo: { $exists: false } };
+    const isGroup = { group: Types.ObjectId(groupId) };
+    const baseQuery = this.postModel
+      .aggregate()
+      .match(isGroup)
+      .match(notRepliedPost)
+      .skip(skipped)
+      .limit(queryParams.itemsPerPage);
+    return await this._sortPosts(baseQuery, sortBy);
   }
 
-  async getFilteredPostsByGroupId(
+  async getSearchedPostsByGroupId(
     groupId: string,
     queryParams: GroupPostQuery,
   ) {
+    // TODO: sort and skip
     return await this.postModel
       .find({ group: Types.ObjectId(groupId) })
       .regex('text subject', new RegExp(queryParams.text, 'i'));
@@ -100,5 +121,44 @@ export class PostService {
       .where('author')
       .equals(user.id)
       .catch(DBErrorHandler);
+  }
+
+  async getPostById(postParams: PostParams): Promise<Post> {
+    const { pid, gid } = postParams;
+    const INCREASE_VIEWS = { $inc: 'views' };
+    return await this.postModel
+      .findByIdAndUpdate(pid, INCREASE_VIEWS)
+      .where('group', gid); // 'where' in this case is for safety
+  }
+  async _sortPosts(baseQuery, sortBy: PostSortBy): Promise<Post[]> {
+    if (!sortBy || sortBy === PostSortBy.NEWEST) {
+      // sort by date
+      return baseQuery.sort({ createdAt: -1 }).exec();
+    } else {
+      const startDate = moment()
+        .startOf('day')
+        .subtract(7, 'days');
+      const endDate = moment().endOf('day');
+      const inSevenDays = { createdAt: { $gte: startDate, $lte: endDate } };
+
+      if (sortBy === PostSortBy.HOT) {
+        // sort by views
+        return baseQuery
+          .match(inSevenDays)
+          .sort({ views: 'desc' })
+          .exec();
+      } else if (sortBy === PostSortBy.TOP) {
+        // sort by liked count
+        const likedByCountField = {
+          likedByCount: { $size: { $ifNull: ['$likedBy', []] } },
+        };
+
+        return baseQuery
+          .match(inSevenDays)
+          .addFields(likedByCountField)
+          .sort({ likedByCount: 'desc' })
+          .exec();
+      }
+    }
   }
 }

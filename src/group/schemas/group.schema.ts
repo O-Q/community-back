@@ -3,6 +3,7 @@ import {
   GroupUserRole,
   DEFAULT_GROUP_USER_ROLE,
 } from '../../user/enums/group-user-role.enum';
+import { GroupStatus } from '../enums/group-status.enum';
 
 export const RegisteredUserSchema = new Schema(
   {
@@ -32,15 +33,33 @@ export const GroupRuleSchema = new Schema(
   { _id: false },
 );
 
+const TAGS_LIMIT = 5;
 export const GroupSchema = new Schema(
   {
-    name: { type: String, unique: true },
+    name: { type: String, unique: true, index: true },
     description: { type: String },
     users: {
       type: [RegisteredUserSchema],
     },
-    tags: { type: [String] },
+    tags: {
+      type: [String],
+      // max array length is 5
+      validate: [arrayLimit, `{PATH} exceeds the limit of ${TAGS_LIMIT}`],
+      index: true,
+    },
     rules: { type: [GroupRuleSchema] },
+    private: { type: Boolean, default: false },
+    // TODO
+    tree: { type: SchemaTypes.Map },
+    status: {
+      type: String,
+      enum: [GroupStatus.ACTIVE, GroupStatus.INACTIVE],
+      default: GroupStatus.ACTIVE,
+    },
   },
   { timestamps: true },
 );
+
+function arrayLimit(val: string[]) {
+  return val.length <= TAGS_LIMIT;
+}

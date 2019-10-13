@@ -28,6 +28,7 @@ import { GroupPostQuery } from './dto/group-post.query.dto';
  * ✔ 4. Create reply post by group id
  * ✔ 5. Delete post by group id
  * ✔ 6. Edit post by group id
+ * 7. Get Post sorted by new, hot, top. for hot and top must be weekly maybe to avoid very old posts
  */
 @Controller('post')
 export class PostController {
@@ -39,11 +40,17 @@ export class PostController {
     @Query() query: GroupPostQuery,
   ) {
     if (query.text) {
-      return this.postService.getFilteredPostsByGroupId(groupParams.gid, query);
+      return this.postService.getSearchedPostsByGroupId(groupParams.gid, query);
     } else {
-      return this.postService.getPostsByGroupId(groupParams.gid);
+      return this.postService.getPostsByGroupId(groupParams.gid, query);
     }
   }
+
+  @Get('/:pid/group/:gid')
+  getPostByGroupId(@Param(ValidationPipe) postParams: PostParams) {
+    return this.postService.getPostById(postParams);
+  }
+
   @UseGuards(AuthGuard(), GroupGuard)
   @Post('/group/:gid')
   createPostByGroupId(
