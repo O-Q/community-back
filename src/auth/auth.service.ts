@@ -18,13 +18,18 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signUp(authCredentialDto: AuthCredentialDto): Promise<void> {
+  async signUp(
+    authCredentialDto: AuthCredentialDto,
+  ): Promise<{ accessToken: string }> {
     // warning: maybe mongo doesn't check uniqueness.
     // see: https://mongoosejs.com/docs/faq.html#unique-doesnt-work
-    const { password } = authCredentialDto;
+    const { username, password } = authCredentialDto;
     authCredentialDto.password = await bcrypt.hash(password, bcryptRound);
-    const createdUser = new this.userModel(authCredentialDto);
-    await createdUser.save().catch(DBErrorHandler);
+    const createdUser: User = await new this.userModel(authCredentialDto)
+      .save()
+      .catch(DBErrorHandler);
+
+    return await this.signIn({ username, password });
   }
   async signIn(
     authCredentialSignInDto: AuthCredentialSignInDto,
@@ -42,8 +47,8 @@ export class AuthService {
     const { username, password } = authCredentialSignInDto;
     const user: User = await this.userModel.findOne({ username });
     if (user && (await this._isValidPassword(password, user.password))) {
-      const { email, id } = user;
-      return { username, email, id };
+      const { roles, id } = user;
+      return { username, roles, id };
     }
     throw new UnauthorizedException('Invalid credentials');
   }

@@ -19,8 +19,4 @@ export class AuthCredentialDto extends AuthCredentialSignInDto {
   @IsString()
   @IsEmail()
   email: string;
-
-  @IsNotEmpty()
-  @IsNumberString()
-  phone: number;
 }

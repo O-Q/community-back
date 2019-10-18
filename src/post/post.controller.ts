@@ -21,6 +21,7 @@ import { PostParams } from './dto/post-params.dto';
 import { EditPostDto } from './dto/edit-post.dto';
 import { GroupGuard } from '../group/guards/group.guard';
 import { GroupPostQuery } from './dto/group-post.query.dto';
+import { PrivateGroupGuard } from '../group/guards/private-group.guard';
 
 /**
  * ✔ 1,2. Get post (with and without filter) by group id. for now subject and text filtered
@@ -46,6 +47,7 @@ export class PostController {
     }
   }
 
+  @UseGuards(PrivateGroupGuard)
   @Get('/:pid/group/:gid')
   getPostByGroupId(@Param(ValidationPipe) postParams: PostParams) {
     return this.postService.getPostById(postParams);

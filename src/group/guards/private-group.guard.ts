@@ -5,6 +5,7 @@ import { Group } from '../interfaces/group.interface';
 import { JwtPayload } from '../../auth/jwt/jwt-payload.interface';
 import { decodeToken } from '../../utils/functions/token-docoder.func';
 import { User } from '../../user/interfaces/user.interface';
+// TODO: need complete validate if token exists
 @Injectable()
 export class PrivateGroupGuard implements CanActivate {
   constructor(

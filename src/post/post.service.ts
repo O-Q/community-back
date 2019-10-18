@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Post } from './interfaces/post.interface';
@@ -14,6 +14,7 @@ import { calcSkippedPage } from '../utils/functions/skip-page.func';
 import { PostSortBy } from './enums/sort-post.enum';
 import moment = require('moment');
 import { PostParams } from './dto/post-params.dto';
+import { GroupUserStatus } from '../user/enums/group-user-status.enum';
 
 /**
  *
@@ -59,14 +60,16 @@ export class PostService {
     groupId: string,
     user: User,
   ): Promise<Post> {
-    const post: Post = await this.postModel
-      .create({
-        ...createPostDto,
-        group: Types.ObjectId(groupId),
-        author: user._id,
-      } as Post)
-      .catch(DBErrorHandler);
-    return post;
+    if (this.isGroupUserStatusActive(user, groupId)) {
+      const post: Post = await this.postModel
+        .create({
+          ...createPostDto,
+          group: Types.ObjectId(groupId),
+          author: user._id,
+        } as Post)
+        .catch(DBErrorHandler);
+      return post;
+    }
   }
 
   /**
@@ -77,16 +80,18 @@ export class PostService {
     groupId: string,
     user: User,
   ): Promise<Post> {
-    const { text, replyTo } = createReplyPostDto;
-    const post: Post = await this.postModel
-      .create({
-        text,
-        replyTo: Types.ObjectId(replyTo),
-        group: Types.ObjectId(groupId),
-        author: user._id,
-      } as Post)
-      .catch(DBErrorHandler);
-    return post;
+    if (this.isGroupUserStatusActive(user, groupId)) {
+      const { text, replyTo } = createReplyPostDto;
+      const post: Post = await this.postModel
+        .create({
+          text,
+          replyTo: Types.ObjectId(replyTo),
+          group: Types.ObjectId(groupId),
+          author: user._id,
+        } as Post)
+        .catch(DBErrorHandler);
+      return post;
+    }
   }
 
   /**
@@ -98,15 +103,16 @@ export class PostService {
     const post = await this.postModel
       .findById(postId)
       .populate('author', 'author group');
+    if (this.isGroupUserStatusActive(user, post.group.toHexString())) {
+      const author = (post.author as unknown) as User;
 
-    const author = (post.author as unknown) as User;
-
-    // TODO: maybe author was not in the group anymore.
-    if (hasPermissionToAction(user, author, post.group)) {
-      const deletedPost: Post = await post.remove().catch(DBErrorHandler);
-      console.log(deletedPost);
-      // delete all replayed post
-      return await this.postModel.deleteMany({ replyTo: postId });
+      // TODO: maybe author was not in the group anymore.
+      if (hasPermissionToAction(user, author, post.group)) {
+        const deletedPost: Post = await post.remove().catch(DBErrorHandler);
+        console.log(deletedPost);
+        // delete all replayed post
+        return await this.postModel.deleteMany({ replyTo: postId });
+      }
     }
   }
 
@@ -159,6 +165,19 @@ export class PostService {
           .sort({ likedByCount: 'desc' })
           .exec();
       }
+    }
+  }
+
+  /**
+   * Check whether user in this group is active. otherwise throw `Forbidden Exception`
+   */
+  private isGroupUserStatusActive(user: User, groupId: string): boolean {
+    const userStatus = user.groups.find(g => g.group.toHexString() === groupId)
+      .status;
+    if (userStatus === GroupUserStatus.ACTIVE) {
+      return true;
+    } else {
+      throw new ForbiddenException('user status in this group is not ACTIVE.');
     }
   }
 }

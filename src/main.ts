@@ -20,7 +20,7 @@ async function bootstrap() {
   mongoose.set('useCreateIndex', true);
   app.register(helmet, HELMET_OPTIONS);
   app.register(rateLimit, RATE_LIMIT_OPTIONS);
-  // app.enableCors({});
+  app.enableCors();
   await app.listen(3000, 'localhost');
 }
 bootstrap();

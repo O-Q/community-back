@@ -25,6 +25,7 @@ const RegisteredGroupSchema = new Schema(
     group: {
       type: SchemaTypes.ObjectId,
       unique: true,
+      sparse: true,
       index: true,
       ref: 'Group',
     },
@@ -44,9 +45,10 @@ const RegisteredGroupSchema = new Schema(
 export const UserSchema = new Schema(
   {
     username: { type: String, required: true, unique: true },
-    email: { type: String },
+    email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    phone: { type: Number, required: true, unique: true },
+    // todo: nullable unique
+    phone: { type: Number, unique: true, sparse: true },
     description: { type: String },
     groups: { type: [RegisteredGroupSchema] },
     roles: {
