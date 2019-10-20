@@ -10,6 +10,7 @@ import { bcryptRound } from '../config/bcrypt.config';
 import { AuthCredentialDto } from './dto/auth-credential.dto';
 import { AuthCredentialSignInDto } from './dto/auth-credential-signin.dto';
 import { JwtPayload } from './jwt/jwt-payload.interface';
+import { UserStatus } from '../user/enums/user-status.enum';
 
 @Injectable()
 export class AuthService {
@@ -25,7 +26,10 @@ export class AuthService {
     // see: https://mongoosejs.com/docs/faq.html#unique-doesnt-work
     const { username, password } = authCredentialDto;
     authCredentialDto.password = await bcrypt.hash(password, bcryptRound);
-    const createdUser: User = await new this.userModel(authCredentialDto)
+    await new this.userModel({
+      ...authCredentialDto,
+      status: UserStatus.CONFIRM_PENDING,
+    } as User)
       .save()
       .catch(DBErrorHandler);
 

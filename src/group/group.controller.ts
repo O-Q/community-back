@@ -16,6 +16,8 @@ import { GroupParams } from './dto/group-params.dto';
 import { GroupDto } from './dto/group.dto';
 import { GroupQuery } from './dto/group-query.dto';
 import { PrivateGroupGuard } from './guards/private-group.guard';
+import { GroupNameParams } from './dto/group-name-params.dto';
+import { ActiveUserGuard } from '../user/guards/active-user.guard';
 
 @Controller('group')
 export class GroupController {
@@ -29,13 +31,19 @@ export class GroupController {
       return this.groupService.getGroups(query);
     }
   }
+  // @UseGuards(PrivateGroupGuard)
+  // @Get('/:gid')
+  // getGroupById(@Param(ValidationPipe) groupParams: GroupParams) {
+  //   return this.groupService.getGroupById(groupParams.gid);
+  // }
+
   @UseGuards(PrivateGroupGuard)
-  @Get('/:gid')
-  getGroupById(@Param(ValidationPipe) groupParams: GroupParams) {
-    return this.groupService.getGroupById(groupParams.gid);
+  @Get('/:gname')
+  getGroupByName(@Param(ValidationPipe) groupParams: GroupNameParams) {
+    return this.groupService.getGroupByName(groupParams.gname);
   }
 
-  @UseGuards(AuthGuard())
+  @UseGuards(AuthGuard(), ActiveUserGuard)
   @Post()
   createGroup(@GetUser() user: User, @Body(ValidationPipe) groupDto: GroupDto) {
     return this.groupService.createGroup(user, groupDto);

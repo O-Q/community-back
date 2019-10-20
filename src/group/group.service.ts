@@ -76,6 +76,17 @@ export class GroupService {
     }
   }
 
+  async getGroupByName(groupName: string): Promise<Group> {
+    const group: Group = await this.groupModel
+      .findOne({ name: groupName })
+      .lean();
+    if (group) {
+      return group;
+    } else {
+      throw new NotFoundException('Group not found');
+    }
+  }
+
   async createGroup(user: User, groupDto: GroupDto) {
     const createdGroup: Group = await this.groupModel
       .create({
