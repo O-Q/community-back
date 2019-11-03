@@ -1,42 +1,48 @@
 import { UserRole } from '../enums/user-roles.enum';
 import {
-  GroupUserRole,
-  DEFAULT_GROUP_USER_ROLE,
-} from '../enums/group-user-role.enum';
+  SocialUserRole,
+  DEFAULT_SOCIAL_USER_ROLE,
+} from '../enums/social-user-role.enum';
 import { Schema, SchemaTypes } from 'mongoose';
 import {
-  GroupUserStatus,
-  DEFAULT_GROUP_USER_STATUS,
-} from '../enums/group-user-status.enum';
+  SocialUserStatus,
+  DEFAULT_SOCIAL_USER_STATUS,
+} from '../enums/social-user-status.enum';
 import { UserStatus } from '../enums/user-status.enum';
+import { SocialType } from '../interfaces/user.interface';
 
 // TODO
 const RegisteredGroupSchema = new Schema(
   {
+    writeAccess: { type: Boolean, default: true },
     status: {
       type: String,
       enum: [
-        GroupUserStatus.ACTIVE,
-        GroupUserStatus.BANNED,
-        GroupUserStatus.PENDING,
+        SocialUserStatus.ACTIVE,
+        SocialUserStatus.BANNED,
+        SocialUserStatus.PENDING,
       ],
-      default: DEFAULT_GROUP_USER_STATUS,
+      default: DEFAULT_SOCIAL_USER_STATUS,
     },
-    group: {
+    social: {
       type: SchemaTypes.ObjectId,
       unique: true,
       sparse: true,
       index: true,
-      ref: 'Group',
+      ref: 'Social',
+    },
+    socialType: {
+      type: String,
+      enum: [SocialType.BLOG, SocialType.FORUM],
     },
     role: {
       type: String,
       enum: [
-        GroupUserRole.CREATOR,
-        GroupUserRole.MODERATOR,
-        GroupUserRole.MEMBER,
+        SocialUserRole.CREATOR,
+        SocialUserRole.MODERATOR,
+        SocialUserRole.MEMBER,
       ],
-      default: DEFAULT_GROUP_USER_ROLE,
+      default: DEFAULT_SOCIAL_USER_ROLE,
     },
   },
   { _id: false },
@@ -50,7 +56,7 @@ export const UserSchema = new Schema(
     // todo: nullable unique
     phone: { type: Number, unique: true, sparse: true },
     description: { type: String },
-    groups: { type: [RegisteredGroupSchema] },
+    socials: { type: [RegisteredGroupSchema] },
     roles: {
       type: [String],
       enum: [UserRole.ADMIN, UserRole.USER],

@@ -1,9 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+
+import { AppModule } from './app.module';
 import * as rateLimit from 'fastify-rate-limit';
 import * as helmet from 'fastify-helmet';
 import * as mongoose from 'mongoose';

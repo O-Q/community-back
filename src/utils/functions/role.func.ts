@@ -1,18 +1,18 @@
 import { User } from '../../user/interfaces/user.interface';
 import { Types } from 'mongoose';
-import { GroupUserRole } from '../../user/enums/group-user-role.enum';
+import { SocialUserRole } from '../../user/enums/social-user-role.enum';
 
 /**
  * Get User's role in the group. return `null` if user was not in the group.
  */
 export function getUserRole(
   user: User,
-  groupId: Types.ObjectId,
-): GroupUserRole {
-  let role: GroupUserRole;
-  user.groups.some(rg => {
-    if (rg.group === groupId) {
-      role = rg.role;
+  socialId: Types.ObjectId,
+): SocialUserRole {
+  let role: SocialUserRole;
+  user.socials.some(rs => {
+    if (rs.social === socialId) {
+      role = rs.role;
       return true;
     } else {
       return false;
@@ -36,13 +36,13 @@ export function hasPermissionToAction(
     return true;
   } else {
     const userRole = getUserRole(user, groupId);
-    if (userRole === GroupUserRole.CREATOR) {
+    if (userRole === SocialUserRole.CREATOR) {
       return true;
     } else {
       const authorRole = getUserRole(author, groupId);
       if (
-        userRole === GroupUserRole.MODERATOR &&
-        authorRole === GroupUserRole.MEMBER
+        userRole === SocialUserRole.MODERATOR &&
+        authorRole === SocialUserRole.MEMBER
       ) {
         return true;
       } else {

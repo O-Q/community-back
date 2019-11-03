@@ -19,6 +19,6 @@ export class UserService {
     }
   }
   async getGroups(user: User) {
-    return user.groups;
+    return user.socials;
   }
 }

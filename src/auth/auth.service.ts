@@ -17,7 +17,7 @@ export class AuthService {
   constructor(
     @InjectModel('User') private readonly userModel: Model<User>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async signUp(
     authCredentialDto: AuthCredentialDto,
@@ -38,10 +38,13 @@ export class AuthService {
   async signIn(
     authCredentialSignInDto: AuthCredentialSignInDto,
   ): Promise<{ accessToken: string }> {
+
     const payload: JwtPayload = await this._validateUserPassword(
       authCredentialSignInDto,
     );
+
     const accessToken = this.jwtService.sign(payload);
+
     return { accessToken };
   }
 
@@ -50,6 +53,7 @@ export class AuthService {
   ): Promise<JwtPayload> {
     const { username, password } = authCredentialSignInDto;
     const user: User = await this.userModel.findOne({ username });
+
     if (user && (await this._isValidPassword(password, user.password))) {
       const { roles, id } = user;
       return { username, roles, id };

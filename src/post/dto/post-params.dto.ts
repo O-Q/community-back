@@ -7,5 +7,5 @@ export class PostParams {
 
   @IsNotEmpty()
   @IsMongoId()
-  gid: string;
+  sid: string;
 }

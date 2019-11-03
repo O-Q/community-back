@@ -3,5 +3,6 @@
         "gname",
         "signin",
         "signup"
-    ]
+    ],
+    "typescript.tsdk": "node_modules\\typescript\\lib"
 }

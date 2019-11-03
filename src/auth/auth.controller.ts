@@ -12,7 +12,7 @@ import { User } from '../user/interfaces/user.interface';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
   @Post('/signup')
   signUp(
     @Body(ValidationPipe) authCredentialDto: AuthCredentialDto,

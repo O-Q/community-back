@@ -1,7 +1,7 @@
 import { UserRole } from '../enums/user-roles.enum';
 import { Document, Types } from 'mongoose';
-import { GroupUserRole } from '../enums/group-user-role.enum';
-import { GroupUserStatus } from '../enums/group-user-status.enum';
+import { SocialUserRole } from '../enums/social-user-role.enum';
+import { SocialUserStatus } from '../enums/social-user-status.enum';
 import { UserStatus } from '../enums/user-status.enum';
 
 export interface User extends Document {
@@ -11,15 +11,22 @@ export interface User extends Document {
   readonly password: string;
   readonly phone: number;
   readonly description: string;
-  readonly groups: RegisteredGroup[];
+  readonly socials: RegisteredSocial[];
   readonly roles: UserRole[];
   readonly status: UserStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
 
-export interface RegisteredGroup {
-  readonly status?: GroupUserStatus;
-  readonly group: Types.ObjectId;
-  readonly role?: GroupUserRole;
+export interface RegisteredSocial {
+  readonly writeAccess?: boolean;
+  readonly status?: SocialUserStatus;
+  readonly social: Types.ObjectId;
+  readonly socialType: SocialType;
+  readonly role?: SocialUserRole;
+}
+
+export enum SocialType {
+  FORUM = 'FORUM',
+  BLOG = 'BLOG',
 }

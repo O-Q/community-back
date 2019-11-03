@@ -5,51 +5,48 @@ import { Post } from './interfaces/post.interface';
 import { CreatePostDto } from './dto/create-post.dto';
 import { DBErrorHandler } from '../utils/error-handlers/db.handler';
 import { CreateReplyPostDto } from './dto/reply-post.dto';
-import { User } from '../user/interfaces/user.interface';
+import { User, SocialType } from '../user/interfaces/user.interface';
 import { EditPostDto } from './dto/edit-post.dto';
-import { GroupUserRole } from '../user/enums/group-user-role.enum';
+import { SocialUserRole } from '../user/enums/social-user-role.enum';
 import { hasPermissionToAction } from '../utils/functions/role.func';
-import { GroupPostQuery } from './dto/group-post.query.dto';
+import { SocialPostQuery } from './dto/social-post.query.dto';
 import { calcSkippedPage } from '../utils/functions/skip-page.func';
 import { PostSortBy } from './enums/sort-post.enum';
 import moment = require('moment');
 import { PostParams } from './dto/post-params.dto';
-import { GroupUserStatus } from '../user/enums/group-user-status.enum';
+import { SocialUserStatus } from '../user/enums/social-user-status.enum';
 
-/**
- *
- */
 @Injectable()
 export class PostService {
-  constructor(@InjectModel('Post') private readonly postModel: Model<Post>) {}
+  constructor(@InjectModel('Post') private readonly postModel: Model<Post>) { }
 
   /**
    *
-   * @param groupId the ID of the group
+   * @param socialId the ID of the social
    * @param queryParams only contains `itemsPerPage` and `page`. sortBy is optional.
    * default sortBy is `NEWEST`.
    */
-  async getPostsByGroupId(groupId: string, queryParams: GroupPostQuery) {
+  async getPostsBySocialId(socialId: string, queryParams: SocialPostQuery) {
     const skipped = calcSkippedPage(queryParams.itemsPerPage, queryParams.page);
     const sortBy = queryParams.sortBy;
     const notRepliedPost = { replayTo: { $exists: false } };
-    const isGroup = { group: Types.ObjectId(groupId) };
+    const isSocial = { social: Types.ObjectId(socialId) };
     const baseQuery = this.postModel
       .aggregate()
-      .match(isGroup)
+      .match(isSocial)
       .match(notRepliedPost)
       .skip(skipped)
       .limit(queryParams.itemsPerPage);
     return await this._sortPosts(baseQuery, sortBy);
   }
 
-  async getSearchedPostsByGroupId(
-    groupId: string,
-    queryParams: GroupPostQuery,
+  async getSearchedPostsBySocialId(
+    socialId: string,
+    queryParams: SocialPostQuery,
   ) {
     // TODO: sort and skip
     return await this.postModel
-      .find({ group: Types.ObjectId(groupId) })
+      .find({ group: Types.ObjectId(socialId) })
       .regex('text subject', new RegExp(queryParams.text, 'i'));
   }
   /**
@@ -60,7 +57,10 @@ export class PostService {
     groupId: string,
     user: User,
   ): Promise<Post> {
-    if (this.isGroupUserStatusActive(user, groupId)) {
+    if (
+      this.isGroupUserStatusActive(user, groupId) &&
+      this.isUserAccessWrite(user, groupId)
+    ) {
       const post: Post = await this.postModel
         .create({
           ...createPostDto,
@@ -130,11 +130,11 @@ export class PostService {
   }
 
   async getPostById(postParams: PostParams): Promise<Post> {
-    const { pid, gid } = postParams;
+    const { pid, sid } = postParams;
     const INCREASE_VIEWS = { $inc: 'views' };
     return await this.postModel
       .findByIdAndUpdate(pid, INCREASE_VIEWS)
-      .where('group', gid); // 'where' in this case is for safety
+      .where('group', sid); // 'where' in this case is for safety
   }
   async _sortPosts(baseQuery, sortBy: PostSortBy): Promise<Post[]> {
     if (!sortBy || sortBy === PostSortBy.NEWEST) {
@@ -171,13 +171,29 @@ export class PostService {
   /**
    * Check whether user in this group is active. otherwise throw `Forbidden Exception`
    */
-  private isGroupUserStatusActive(user: User, groupId: string): boolean {
-    const userStatus = user.groups.find(g => g.group.toHexString() === groupId)
-      .status;
-    if (userStatus === GroupUserStatus.ACTIVE) {
+  private isGroupUserStatusActive(user: User, socialId: string): boolean {
+    const userStatus = user.socials.find(
+      s => s.social.toHexString() === socialId,
+    ).status;
+    if (userStatus === SocialUserStatus.ACTIVE) {
       return true;
     } else {
       throw new ForbiddenException('user status in this group is not ACTIVE.');
+    }
+  }
+
+  /**
+   * Check whether user has access to write in this group. otherwise throw `Forbidden Exception`
+   */
+  private isUserAccessWrite(user: User, socialId: string) {
+    // TODO: social type?
+    const writeAccess = user.socials.find(
+      s => s.social.toHexString() === socialId,
+    ).writeAccess;
+    if (writeAccess) {
+      return true;
+    } else {
+      throw new ForbiddenException("user doesn't have permission to write");
     }
   }
 }
