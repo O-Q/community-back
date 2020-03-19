@@ -24,6 +24,7 @@ export interface RegisteredSocial {
   readonly social: Types.ObjectId;
   readonly socialType: SocialType;
   readonly role?: SocialUserRole;
+  readonly name: string;
 }
 
 export enum SocialType {

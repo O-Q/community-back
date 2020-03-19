@@ -12,12 +12,11 @@ export interface Forum extends Document {
   readonly rules: RuleSocial[];
   readonly posts: Types.ObjectId[];
   readonly private: boolean;
-  readonly tree: any; // TODO
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
 
 export interface RegisteredUser {
   readonly user: Types.ObjectId;
-  readonly role?: SocialUserRole[];
+  readonly role?: SocialUserRole;
 }

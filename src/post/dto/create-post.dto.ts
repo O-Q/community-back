@@ -1,4 +1,4 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsString, MinLength, IsNotEmpty } from 'class-validator';
 
 export class CreatePostDto {
   @IsString()
@@ -6,6 +6,9 @@ export class CreatePostDto {
   title: string;
 
   @IsString()
-  @MinLength(20)
+  subtitle: string;
+
+  @IsString()
+  @IsNotEmpty()
   text: string;
 }

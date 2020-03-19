@@ -15,7 +15,7 @@ import { User } from './interfaces/user.interface';
 @Controller('user')
 @UseGuards(AuthGuard())
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService) { }
   @Get()
   getUser(@GetUser() user: User): Promise<User> {
     return this.userService.getUser(user);
@@ -29,8 +29,8 @@ export class UserController {
     return this.userService.updateUser(user, updatedUser);
   }
 
-  @Get('/groups')
-  getGroups(@GetUser() user: User): Promise<any> {
-    return this.userService.getGroups(user);
+  @Get('/socials')
+  getSocials(@GetUser() user: User): Promise<any> {
+    return this.userService.getSocials(user);
   }
 }

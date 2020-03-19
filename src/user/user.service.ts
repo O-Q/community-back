@@ -5,9 +5,7 @@ import { User } from './interfaces/user.interface';
 @Injectable()
 export class UserService {
   async getUser(user: User): Promise<User> {
-    return user
-      .populate('groups.group', 'name description tags')
-      .execPopulate();
+    return await user.populate('socials.social', 'name description flairs');
   }
 
   async updateUser(user: User, updatedUser: UserDto): Promise<void> {
@@ -18,7 +16,11 @@ export class UserService {
       throw new ForbiddenException('changing username not permitted');
     }
   }
-  async getGroups(user: User) {
-    return user.socials;
+  async getSocials(user: User) {
+    const userPopulated = await user.populate({
+      path: 'socials.social', select: 'name',
+    }).execPopulate();
+    return userPopulated.socials;
+
   }
 }

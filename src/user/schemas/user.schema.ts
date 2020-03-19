@@ -24,6 +24,7 @@ const RegisteredGroupSchema = new Schema(
       ],
       default: DEFAULT_SOCIAL_USER_STATUS,
     },
+    name: { type: String },
     social: {
       type: SchemaTypes.ObjectId,
       unique: true,

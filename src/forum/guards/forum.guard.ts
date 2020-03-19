@@ -12,7 +12,7 @@ import { SocialUserRole } from '../../user/enums/social-user-role.enum';
  */
 @Injectable()
 export class SocialGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector) { }
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
@@ -25,11 +25,10 @@ export class SocialGuard implements CanActivate {
         context.getHandler(),
       ) ||
       this.reflector.get<SocialUserRole[]>('forumRoles', context.getClass());
+
     if (Types.ObjectId.isValid(sid)) {
       const user: User = request.user;
-      const socialId = Types.ObjectId(request.params.id);
-      const social = user.socials.find(rs => rs.social === socialId);
-
+      const social = user.socials.find(rs => rs.social.toHexString() === sid);
       if (expectedRoles) {
         const isUserPermitted =
           social !== undefined && expectedRoles.includes(social.role);

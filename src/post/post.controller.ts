@@ -35,27 +35,40 @@ import { PrivateForumGuard } from '../forum/guards/private-forum.guard';
 export class PostController {
   constructor(private readonly postService: PostService) { }
 
-  @Get('/social/:sid')
+  @Get('/social/:sname')
   getPostsBySocialId(
-    @Param(ValidationPipe) socialParams: SocialParams,
+    @Param(ValidationPipe) socialParams: { sname },
     @Query(ValidationPipe) query: SocialPostQuery,
   ) {
     if (query.text) {
       return this.postService.getSearchedPostsBySocialId(
-        socialParams.sid,
+        socialParams.sname,
         query,
       );
     } else {
-      return this.postService.getPostsBySocialId(socialParams.sid, query);
+      return this.postService.getPostsBySocialName(socialParams.sname, query);
     }
   }
 
   @UseGuards(PrivateForumGuard)
-  @Get('/:pid/social/:sid')
-  getPostBySocialId(@Param(ValidationPipe) postParams: PostParams) {
-    return this.postService.getPostById(postParams);
+  @Get('/:pid/social/:sname')
+  getPostBySocialName(@Param(ValidationPipe) postParams: PostParams) {
+    return this.postService.getPostBySocialName(postParams);
   }
 
+  // @UseGuards(AuthGuard(), SocialGuard)
+  // @Post('/social/:sid')
+  // createPostBySocialId(
+  //   @Param(ValidationPipe) socialParams: SocialParams,
+  //   @Body(ValidationPipe) createPostDto: CreatePostDto,
+  //   @GetUser() user: User,
+  // ) {
+  //   return this.postService.createPostByGroupId(
+  //     createPostDto,
+  //     socialParams.sid,
+  //     user,
+  //   );
+  // }
   @UseGuards(AuthGuard(), SocialGuard)
   @Post('/social/:sid')
   createPostBySocialId(
@@ -63,23 +76,22 @@ export class PostController {
     @Body(ValidationPipe) createPostDto: CreatePostDto,
     @GetUser() user: User,
   ) {
-    return this.postService.createPostByGroupId(
+    return this.postService.createPostBySocialId(
       createPostDto,
       socialParams.sid,
       user,
     );
   }
-
   @UseGuards(AuthGuard(), SocialGuard)
-  @Post(':pid/social/:sid/replay')
-  createReplyPostByGroupId(
+  @Post(':pid/social/:sname/replay')
+  createReplyPostBySocialName(
     @Param(ValidationPipe) postParams: PostParams,
     @Body(ValidationPipe) createReplyPostDto: CreateReplyPostDto,
     @GetUser() user: User,
   ) {
-    return this.postService.createReplayPostByGroupId(
+    return this.postService.createReplayPostBySocialName(
       createReplyPostDto,
-      postParams.sid,
+      postParams.sname,
       user,
     );
   }

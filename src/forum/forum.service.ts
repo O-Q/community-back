@@ -82,12 +82,18 @@ export class ForumService {
     }
   }
 
-  async getForumByName(forumName: string): Promise<Forum> {
-    const forum: Forum = await this.forumModel
-      .findOne({ name: forumName }, { __v: 0 })
-      .lean();
+  async getForumByName(forumName: string): Promise<any> {
+    const forum = await this.forumModel.aggregate().match({ name: forumName }).project({ __v: 0, posts: 0 })
+      .addFields({
+        users: {
+          $filter: { input: '$users', as: 'user', cond: { $in: ['$$user.role', [SocialUserRole.CREATOR, SocialUserRole.MODERATOR]] } }
+        },
+      })
+      .lookup({ from: 'users', localField: 'users.user', foreignField: '_id', as: 'users' })
+      .addFields({ admins: '$users.username' })
+      .project({ users: 0 });
     if (forum) {
-      return forum;
+      return forum[0];
     } else {
       throw new NotFoundException('Forum not found');
     }
@@ -125,6 +131,7 @@ export class ForumService {
       social: createdForum._id,
       socialType: SocialType.FORUM,
       role: SocialUserRole.CREATOR,
+      name: createdForum.name,
     });
 
     await user.save().catch(DBErrorHandler);
@@ -136,6 +143,7 @@ export class ForumService {
       const registeredForum: RegisteredSocial = {
         social: Types.ObjectId(socialId),
         socialType: SocialType.FORUM,
+        name: 'TODO'
       };
       const registeredUser: RegisteredUser = {
         user: user._id,

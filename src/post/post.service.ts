@@ -15,59 +15,66 @@ import { PostSortBy } from './enums/sort-post.enum';
 import moment = require('moment');
 import { PostParams } from './dto/post-params.dto';
 import { SocialUserStatus } from '../user/enums/social-user-status.enum';
+import { Forum } from '../forum/interfaces/forum.interface';
 
 @Injectable()
 export class PostService {
-  constructor(@InjectModel('Post') private readonly postModel: Model<Post>) { }
+  constructor(@InjectModel('Post') private readonly postModel: Model<Post>, @InjectModel('Social') private readonly socialModel: Model<Forum>) { }
 
   /**
    *
-   * @param socialId the ID of the social
+   * @param socialName the ID of the social
    * @param queryParams only contains `itemsPerPage` and `page`. sortBy is optional.
    * default sortBy is `NEWEST`.
    */
-  async getPostsBySocialId(socialId: string, queryParams: SocialPostQuery) {
-    const skipped = calcSkippedPage(queryParams.itemsPerPage, queryParams.page);
+  async getPostsBySocialName(socialName: string, queryParams: SocialPostQuery) {
+    const skipped = calcSkippedPage(+queryParams.itemsPerPage, +queryParams.page);
     const sortBy = queryParams.sortBy;
     const notRepliedPost = { replayTo: { $exists: false } };
-    const isSocial = { social: Types.ObjectId(socialId) };
+    const isSocial = { social: socialName };
     const baseQuery = this.postModel
-      .aggregate()
+      .aggregate().lookup({
+        from: 'socials', localField: 'social', foreignField: '_id', as: 'social',
+      }).unwind('social').addFields({ social: '$social.name' })
       .match(isSocial)
       .match(notRepliedPost)
       .skip(skipped)
-      .limit(queryParams.itemsPerPage);
+      .limit(+queryParams.itemsPerPage).lookup({
+        from: 'users', localField: 'author', foreignField: '_id', as: 'author',
+      }).unwind('author').addFields({ author: '$author.username' }).project({ __v: 0 });
     return await this._sortPosts(baseQuery, sortBy);
   }
 
+  // TODO
   async getSearchedPostsBySocialId(
     socialId: string,
     queryParams: SocialPostQuery,
   ) {
     // TODO: sort and skip
     return await this.postModel
-      .find({ group: Types.ObjectId(socialId) })
+      .find({ social: Types.ObjectId(socialId) })
       .regex('text subject', new RegExp(queryParams.text, 'i'));
   }
   /**
    * Create new post
    */
-  async createPostByGroupId(
+  async createPostBySocialId(
     createPostDto: CreatePostDto,
-    groupId: string,
+    socialId: string,
     user: User,
   ): Promise<Post> {
     if (
-      this.isGroupUserStatusActive(user, groupId) &&
-      this.isUserAccessWrite(user, groupId)
+      this.isGroupUserStatusActive(user, socialId) &&
+      this.isUserAccessWrite(user, socialId)
     ) {
       const post: Post = await this.postModel
         .create({
           ...createPostDto,
-          group: Types.ObjectId(groupId),
+          social: Types.ObjectId(socialId),
           author: user._id,
         } as Post)
         .catch(DBErrorHandler);
+      await this.socialModel.findByIdAndUpdate(socialId, { $push: { posts: post.id } });
       return post;
     }
   }
@@ -75,7 +82,7 @@ export class PostService {
   /**
    * Create reply post
    */
-  async createReplayPostByGroupId(
+  async createReplayPostBySocialName(
     createReplyPostDto: CreateReplyPostDto,
     groupId: string,
     user: User,
@@ -86,10 +93,11 @@ export class PostService {
         .create({
           text,
           replyTo: Types.ObjectId(replyTo),
-          group: Types.ObjectId(groupId),
+          social: Types.ObjectId(groupId),
           author: user._id,
         } as Post)
         .catch(DBErrorHandler);
+      await this.postModel.findByIdAndUpdate(createReplyPostDto.replyTo, { $inc: { comment: 1 } });
       return post;
     }
   }
@@ -103,11 +111,11 @@ export class PostService {
     const post = await this.postModel
       .findById(postId)
       .populate('author', 'author group');
-    if (this.isGroupUserStatusActive(user, post.group.toHexString())) {
+    if (this.isGroupUserStatusActive(user, post.social.toHexString())) {
       const author = (post.author as unknown) as User;
 
       // TODO: maybe author was not in the group anymore.
-      if (hasPermissionToAction(user, author, post.group)) {
+      if (hasPermissionToAction(user, author, post.social)) {
         const deletedPost: Post = await post.remove().catch(DBErrorHandler);
         console.log(deletedPost);
         // delete all replayed post
@@ -129,12 +137,20 @@ export class PostService {
       .catch(DBErrorHandler);
   }
 
-  async getPostById(postParams: PostParams): Promise<Post> {
-    const { pid, sid } = postParams;
-    const INCREASE_VIEWS = { $inc: 'views' };
-    return await this.postModel
+  async getPostBySocialName(postParams: PostParams): Promise<Post> {
+    const { pid, sname } = postParams;
+    const INCREASE_VIEWS = { $inc: { views: 1 } };
+    const result = await this.postModel
       .findByIdAndUpdate(pid, INCREASE_VIEWS)
-      .where('group', sid); // 'where' in this case is for safety
+      .populate('social', { name: 1, _id: 0, users: 1 }).select({ __v: 0 })
+      .populate('author', { username: 1, _id: 0 }).lean() as any;
+    result.social.admins = result.social.users.filter(x => [SocialUserRole.CREATOR, SocialUserRole.MODERATOR].includes(x.role));
+    delete result.social.users;
+    result.author = result.author.username;
+    result.comments = await this.postModel.find({ replyTo: pid }, { __v: 0 })
+      .populate('author', { username: 1, _id: 0 })
+      .lean();
+    return result;
   }
   async _sortPosts(baseQuery, sortBy: PostSortBy): Promise<Post[]> {
     if (!sortBy || sortBy === PostSortBy.NEWEST) {

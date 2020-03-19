@@ -2,8 +2,9 @@ import { Types, Document } from 'mongoose';
 
 export interface Post extends Document {
   title: string;
+  subtitle: string;
   text: string;
-  group: Types.ObjectId;
+  social: Types.ObjectId;
   author: Types.ObjectId;
   likedBy: Types.ObjectId[];
   dislikedBy: Types.ObjectId[];

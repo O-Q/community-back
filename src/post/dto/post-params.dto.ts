@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsMongoId } from 'class-validator';
+import { IsNotEmpty, IsMongoId, IsString } from 'class-validator';
 
 export class PostParams {
   @IsNotEmpty()
@@ -6,6 +6,6 @@ export class PostParams {
   pid: string;
 
   @IsNotEmpty()
-  @IsMongoId()
-  sid: string;
+  @IsString()
+  sname: string;
 }

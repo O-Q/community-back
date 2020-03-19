@@ -5,7 +5,6 @@ import { Forum } from '../interfaces/forum.interface';
 import { JwtPayload } from '../../auth/jwt/jwt-payload.interface';
 import { decodeToken } from '../../utils/functions/token-decoder.func';
 import { User } from '../../user/interfaces/user.interface';
-// TODO: need complete validate if token exists
 import atob = require('atob');
 
 @Injectable()
@@ -29,7 +28,6 @@ export class PrivateForumGuard implements CanActivate {
         const user = await this.userModel.findOne({
           username: payload.username,
         });
-        console.log(forum._id);
 
         const found = user.socials.some(s => s.social.equals(forum._id));
         if (found) {

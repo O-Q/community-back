@@ -50,24 +50,23 @@ export const SocialSchema = new Schema(
       type: [RegisteredUserSchema],
     },
     tags: {
-      type: [String],
+      type: [{ type: String, index: true, unique: true }],
       default: [],
-      index: true,
+
       // max array length is 5
       validate: [arrayLimit, `{PATH} exceeds the limit of ${TAGS_LIMIT}`],
 
     },
     flairs: {
-      type: [String],
+      type: [{ type: String, index: true, unique: true }],
       default: [],
-      index: true,
       // max array length is 20
       validate: [arrayLimit, `{PATH} exceeds the limit of ${FLAIRS_LIMIT}`],
     },
     type: { type: String, enum: [SocialType.BLOG, SocialType.FORUM], required: true, index: true },
     rules: { type: [SocialRuleSchema] },
     private: { type: Boolean, default: false },
-    posts: { type: [SchemaTypes.ObjectId], ref: 'Post', index: true, default: [] },
+    posts: { type: [{ type: SchemaTypes.ObjectId, ref: 'Post', index: true }], default: [] },
     status: {
       type: String,
       enum: [SocialStatus.ACTIVE, SocialStatus.INACTIVE],

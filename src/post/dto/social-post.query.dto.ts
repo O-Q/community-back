@@ -4,23 +4,25 @@ import {
   IsOptional,
   IsEnum,
   IsPositive,
-  MinLength,
-  MaxLength,
+  Min,
+  Max,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PostSortBy } from '../enums/sort-post.enum';
 
 export class SocialPostQuery {
-  @IsPositive()
+  @Type(() => Number)
   @IsNotEmpty()
   page: number;
 
+  @Type(() => Number)
   @IsPositive()
   @IsNotEmpty()
-  @MinLength(5)
-  @MaxLength(100)
+  @Min(5)
+  @Max(100)
   itemsPerPage: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   text: string;
 
