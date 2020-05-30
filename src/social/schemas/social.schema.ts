@@ -1,10 +1,11 @@
-import { Schema, SchemaTypes } from 'mongoose';
+import { Schema, SchemaTypes, Types } from 'mongoose';
 import {
   SocialUserRole,
   DEFAULT_SOCIAL_USER_ROLE,
 } from '../../user/enums/social-user-role.enum';
 import { SocialStatus } from '../enums/social-status.enum';
 import { SocialType } from '../../user/interfaces/user.interface';
+import { messages } from '../../../messages.const';
 
 export const RegisteredUserSchema = new Schema(
   {
@@ -36,15 +37,31 @@ export const WidgetSchema = new Schema(
   {
     name: { type: String },
     inputs: { type: Object },
+    registeredToShow: { type: Boolean, default: false },
+    viewValue: { type: String },
   },
   { _id: false },
 );
 
+export const ColorsSchema = new Schema(
+  {
+    background: { type: String },
+    primary: { type: String },
+    accent: { type: String },
+    text: { type: String },
+    title: { type: String },
+  },
+  { _id: false },
+);
 const TAGS_LIMIT = 5;
 const FLAIRS_LIMIT = 20;
 export const SocialSchema = new Schema(
   {
     name: { type: String, unique: true, index: true },
+    avatar: { type: String },
+    banner: { type: String },
+    title: { type: String },
+    colors: { type: ColorsSchema },
     description: { type: String },
     users: {
       type: [RegisteredUserSchema],
@@ -52,20 +69,19 @@ export const SocialSchema = new Schema(
     tags: {
       type: [{ type: String, index: true, unique: true }],
       default: [],
-
       // max array length is 5
-      validate: [arrayLimit, `{PATH} exceeds the limit of ${TAGS_LIMIT}`],
+      validate: [arrayLimit, `{PATH} ${messages.db.LIMIT_EXCEEDED} ${TAGS_LIMIT}`],
 
     },
     flairs: {
       type: [{ type: String, index: true, unique: true }],
       default: [],
       // max array length is 20
-      validate: [arrayLimit, `{PATH} exceeds the limit of ${FLAIRS_LIMIT}`],
+      validate: [arrayLimit, `{PATH} ${messages.db.LIMIT_EXCEEDED} ${FLAIRS_LIMIT}`],
     },
     type: { type: String, enum: [SocialType.BLOG, SocialType.FORUM], required: true, index: true },
     rules: { type: [SocialRuleSchema] },
-    private: { type: Boolean, default: false },
+    isPrivate: { type: Boolean, default: false },
     posts: { type: [{ type: SchemaTypes.ObjectId, ref: 'Post', index: true }], default: [] },
     status: {
       type: String,

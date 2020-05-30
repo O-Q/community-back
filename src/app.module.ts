@@ -7,6 +7,9 @@ import { EventsModule } from './events/events.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ForumModule } from './forum/forum.module';
 import { BlogModule } from './blog/blog.module';
+import { SearchModule } from './search/search.module';
+import { ScheduledModule } from './scheduled/scheduled.module';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -22,7 +25,9 @@ import { BlogModule } from './blog/blog.module';
     PostModule,
     EventsModule,
     BlogModule,
+    SearchModule,
+    ScheduledModule,
+    LoggerModule,
   ],
-  providers: [],
 })
 export class AppModule { }

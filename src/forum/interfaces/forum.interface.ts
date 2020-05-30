@@ -9,6 +9,8 @@ export interface Forum extends Document {
   readonly users: RegisteredUser[];
   readonly tags: string[];
   readonly flairs: string[];
+  readonly widgets: Widget[];
+  readonly isPrivate: boolean;
   readonly rules: RuleSocial[];
   readonly posts: Types.ObjectId[];
   readonly private: boolean;
@@ -19,4 +21,10 @@ export interface Forum extends Document {
 export interface RegisteredUser {
   readonly user: Types.ObjectId;
   readonly role?: SocialUserRole;
+}
+export interface Widget {
+  readonly name: string;
+  readonly inputs?: Array<{ value: any, type: string, title: string }>;
+  readonly registeredToShow: boolean;
+  readonly viewValue?: string;
 }

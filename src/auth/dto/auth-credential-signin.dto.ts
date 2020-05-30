@@ -1,15 +1,16 @@
 import { MinLength, IsString, MaxLength, Matches } from 'class-validator';
+import { messages } from '../../../messages.const';
 
 export class AuthCredentialSignInDto {
-  @IsString()
+  @IsString({ message: messages.validator.IS_STRING })
   @MinLength(4)
   @MaxLength(20)
   username: string;
 
-  @IsString()
+  @IsString({ message: messages.validator.IS_STRING })
   @MinLength(6)
   @MaxLength(20)
-  @Matches(/(?=.*\d)/, { message: 'should contain at least one digit' })
-  @Matches(/(?=.*[a-zA-Z])/, { message: 'should contain at least one word' })
+  @Matches(/(?=.*\d)/, { message: messages.validator.AT_LEAST_ONE_DIGIT })
+  @Matches(/(?=.*[a-zA-Z])/, { message: messages.validator.AT_LEAST_ONE_LETTER })
   password: string;
 }

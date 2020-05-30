@@ -1,11 +1,10 @@
-import { CanActivate, ExecutionContext, Injectable, HttpException, NotFoundException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, HttpException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Types, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Forum } from '../interfaces/forum.interface';
 import { JwtPayload } from '../../auth/jwt/jwt-payload.interface';
 import { decodeToken } from '../../utils/functions/token-decoder.func';
 import { User } from '../../user/interfaces/user.interface';
-import atob = require('atob');
 
 @Injectable()
 export class PrivateForumGuard implements CanActivate {
@@ -15,26 +14,27 @@ export class PrivateForumGuard implements CanActivate {
   ) { }
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const name = request.params.sname;
-
+    const name = request.query.n;
     const forum: Forum = await this.forumModel.findOne({ name }).lean();
-    if (!forum?.private) {
+
+    const token: string = request.headers.authorization;
+    const payload: JwtPayload = decodeToken(token);
+    console.log(payload);
+
+    if (!payload || payload.exp * 1000 < Date.now()) { // token expires
+      // TODO: permit user to access or not? for now permit
+      // throw new UnauthorizedException();
+    } else {
+      const user = await this.userModel.findOne({
+        username: payload?.username,
+      });
+      request.user = user;
+    }
+    if (!forum?.private || (token && request.user?.socials.some(s => s.social.equals(forum._id)))) {
       return true;
     } else {
-      // not tested
-      const token: string = request.headers.authorization;
-      if (token) {
-        const payload: JwtPayload = decodeToken(token);
-        const user = await this.userModel.findOne({
-          username: payload.username,
-        });
-
-        const found = user.socials.some(s => s.social.equals(forum._id));
-        if (found) {
-          return true;
-        }
-      }
       throw new NotFoundException();
     }
+
   }
 }

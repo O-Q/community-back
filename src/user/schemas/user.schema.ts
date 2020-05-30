@@ -12,7 +12,7 @@ import { UserStatus } from '../enums/user-status.enum';
 import { SocialType } from '../interfaces/user.interface';
 
 // TODO
-const RegisteredGroupSchema = new Schema(
+const RegisteredSocialSchema = new Schema(
   {
     writeAccess: { type: Boolean, default: true },
     status: {
@@ -24,17 +24,13 @@ const RegisteredGroupSchema = new Schema(
       ],
       default: DEFAULT_SOCIAL_USER_STATUS,
     },
-    name: { type: String },
+    notifications: { type: Number, default: 0 },
     social: {
       type: SchemaTypes.ObjectId,
-      unique: true,
-      sparse: true,
-      index: true,
+      // unique: true,
+      // sparse: true,
+      // index: true,
       ref: 'Social',
-    },
-    socialType: {
-      type: String,
-      enum: [SocialType.BLOG, SocialType.FORUM],
     },
     role: {
       type: String,
@@ -45,19 +41,22 @@ const RegisteredGroupSchema = new Schema(
       ],
       default: DEFAULT_SOCIAL_USER_ROLE,
     },
+
   },
   { _id: false },
 );
 
 export const UserSchema = new Schema(
   {
-    username: { type: String, required: true, unique: true },
+    username: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     // todo: nullable unique
     phone: { type: Number, unique: true, sparse: true },
     description: { type: String },
-    socials: { type: [RegisteredGroupSchema] },
+    socials: { type: [RegisteredSocialSchema] },
+    avatar: { type: String }, // address
+    banner: { type: String }, // address
     roles: {
       type: [String],
       enum: [UserRole.ADMIN, UserRole.USER],
@@ -71,7 +70,11 @@ export const UserSchema = new Schema(
         UserStatus.DELETED,
       ],
     },
+    privacy: { type: Object },
+    following: { type: [{ type: SchemaTypes.ObjectId, ref: 'User' }], default: [] },
+    followersCount: { type: Number, default: 0 },
   },
+
   { timestamps: true, versionKey: false },
 );
 

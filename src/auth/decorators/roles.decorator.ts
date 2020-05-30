@@ -3,4 +3,4 @@ import { SetMetadata } from '@nestjs/common';
 /**
  * use for restriction access
  */
-export const Roles = (...roles: string[]) => SetMetadata('roles', roles);
+export const Roles = (...roles: any[]) => SetMetadata('roles', roles);

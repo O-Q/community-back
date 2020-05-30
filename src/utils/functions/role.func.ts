@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 import { SocialUserRole } from '../../user/enums/social-user-role.enum';
 
 /**
- * Get User's role in the group. return `null` if user was not in the group.
+ * Get User's role in the social. return `null` if user was not in the social.
  */
 export function getUserRole(
   user: User,
@@ -30,16 +30,16 @@ export function getUserRole(
 export function hasPermissionToAction(
   user: User,
   author: User,
-  groupId: Types.ObjectId,
+  socialId: Types.ObjectId,
 ): boolean {
   if (user.id === author.id) {
     return true;
   } else {
-    const userRole = getUserRole(user, groupId);
+    const userRole = getUserRole(user, socialId);
     if (userRole === SocialUserRole.CREATOR) {
       return true;
     } else {
-      const authorRole = getUserRole(author, groupId);
+      const authorRole = getUserRole(author, socialId);
       if (
         userRole === SocialUserRole.MODERATOR &&
         authorRole === SocialUserRole.MEMBER

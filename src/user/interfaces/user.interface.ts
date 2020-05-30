@@ -16,15 +16,17 @@ export interface User extends Document {
   readonly status: UserStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly privacy: any;
+  readonly following: Types.ObjectId[];
+  readonly followersCount: number;
+  readonly notifications: number;
 }
 
 export interface RegisteredSocial {
   readonly writeAccess?: boolean;
   readonly status?: SocialUserStatus;
   readonly social: Types.ObjectId;
-  readonly socialType: SocialType;
   readonly role?: SocialUserRole;
-  readonly name: string;
 }
 
 export enum SocialType {

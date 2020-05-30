@@ -6,27 +6,27 @@ import {
   IsOptional,
   IsPositive,
   MaxLength,
+  IsNumberString,
 } from 'class-validator';
 import { SortByForum } from '../enums/sort-social.enum';
+import { messages } from '../../../messages.const';
 
 export class SocialQuery {
   // @IsNumber()
-  @IsNotEmpty()
-  @IsPositive()
-  page: number;
+  @IsNotEmpty({ message: messages.validator.IS_NOT_EMPTY })
+  @IsNumberString({ message: messages.validator.IS_NUMBER })
+  page: string;
 
-  @IsPositive()
-  @IsNotEmpty()
-  @MinLength(5)
-  @MaxLength(100)
-  itemsPerPage: number;
+  @IsNotEmpty({ message: messages.validator.IS_NOT_EMPTY })
+  @IsNumberString({ message: messages.validator.IS_NUMBER })
+  itemsPerPage: string;
 
-  @MinLength(3)
-  @IsString()
   @IsOptional()
+  @IsString({ message: messages.validator.IS_STRING })
+  @MinLength(3)
   text: string; // it's used for search. being required handles by front-end
 
-  @IsEnum(SortByForum)
   @IsOptional()
+  @IsEnum(SortByForum)
   sortBy: SortByForum;
 }

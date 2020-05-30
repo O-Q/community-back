@@ -11,13 +11,18 @@ import { AuthCredentialDto } from './dto/auth-credential.dto';
 import { AuthCredentialSignInDto } from './dto/auth-credential-signin.dto';
 import { JwtPayload } from './jwt/jwt-payload.interface';
 import { UserStatus } from '../user/enums/user-status.enum';
+import { messages } from '../../messages.const';
+import { AppLogger } from '../logger/logger';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel('User') private readonly userModel: Model<User>,
     private readonly jwtService: JwtService,
-  ) { }
+    private logger: AppLogger,
+  ) {
+    this.logger.setContext('AuthService');
+  }
 
   async signUp(
     authCredentialDto: AuthCredentialDto,
@@ -32,7 +37,7 @@ export class AuthService {
     } as User)
       .save()
       .catch(DBErrorHandler);
-
+    this.logger.log(`User '${username}' signed up.`);
     return await this.signIn({ username, password });
   }
   async signIn(
@@ -44,7 +49,7 @@ export class AuthService {
     );
 
     const accessToken = this.jwtService.sign(payload);
-
+    this.logger.log(`User '${payload.username}' signed in.`);
     return { accessToken };
   }
 
@@ -54,14 +59,15 @@ export class AuthService {
     const { username, password } = authCredentialSignInDto;
     const user: User = await this.userModel.findOne({ username });
 
-    if (user && (await this._isValidPassword(password, user.password))) {
+    if (user && (await this.isValidPassword(password, user.password))) {
       const { roles, id } = user;
       return { username, roles, id };
     }
-    throw new UnauthorizedException('Invalid credentials');
+    this.logger.warn(`Invalid sign in values for username '${username}'`);
+    throw new UnauthorizedException(`اطلاعات کاربری ${messages.common.INVALID}`);
   }
 
-  private async _isValidPassword(
+  async isValidPassword(
     password: string,
     realEncrypted: string,
   ): Promise<boolean> {
