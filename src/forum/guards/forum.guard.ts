@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { User } from '../../user/interfaces/user.interface';
+import { User, SocialType } from '../../user/interfaces/user.interface';
 import { Types, Model } from 'mongoose';
 import { Reflector } from '@nestjs/core';
 import { SocialUserRole } from '../../user/enums/social-user-role.enum';
@@ -23,6 +23,13 @@ export class SocialGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const sname = request.query.n;
     const sid = request.params.sid;
+    const socialType = request.body?.socialType;
+    const mustAffectSocialType =
+      this.reflector.get<SocialType[]>(
+        'socialType',
+        context.getHandler(),
+      )?.[0] ||
+      this.reflector.get<SocialType[]>('socialType', context.getClass())?.[0];
 
     const expectedRoles =
       this.reflector.get<SocialUserRole[]>(
@@ -34,14 +41,22 @@ export class SocialGuard implements CanActivate {
     const user = request.user;
 
     if (sid) {
-      const userSocial = user.socials.find(rs => rs.social.toHexString() === sid);
-      return this._isUserLegalToAction(userSocial, expectedRoles);
+      if (mustAffectSocialType === socialType) {
+        const userSocial = user.socials.find(rs => rs.social.toHexString() === sid);
+        return this._isUserLegalToAction(userSocial, expectedRoles);
+      } else {
+        return true;
+      }
     } else if (sname) {
       // TODO: select only what you need
       const social = await this.forumModel.findOne({ name: sname });
       const userSocial = user.socials.find(rs => rs.social.toHexString() === social.id);
       request.social = social;
-      return this._isUserLegalToAction(userSocial, expectedRoles);
+      if (mustAffectSocialType === socialType) {
+        return this._isUserLegalToAction(userSocial, expectedRoles);
+      } else {
+        return true;
+      }
     }
   }
 

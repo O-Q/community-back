@@ -11,7 +11,15 @@ import {
 import { UserStatus } from '../enums/user-status.enum';
 import { SocialType } from '../interfaces/user.interface';
 
-// TODO
+const NotificationSchema = new Schema({
+  type: { type: String, required: true },
+  message: { type: String, required: true },
+  pid: { type: SchemaTypes.ObjectId },
+  sid: { type: SchemaTypes.ObjectId },
+
+},
+  { timestamps: true, versionKey: false, _id: false });
+
 const RegisteredSocialSchema = new Schema(
   {
     writeAccess: { type: Boolean, default: true },
@@ -24,7 +32,7 @@ const RegisteredSocialSchema = new Schema(
       ],
       default: DEFAULT_SOCIAL_USER_STATUS,
     },
-    notifications: { type: Number, default: 0 },
+    notifications: { type: [NotificationSchema], default: [] },
     social: {
       type: SchemaTypes.ObjectId,
       // unique: true,
@@ -45,6 +53,7 @@ const RegisteredSocialSchema = new Schema(
   },
   { _id: false },
 );
+
 
 export const UserSchema = new Schema(
   {

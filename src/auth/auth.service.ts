@@ -11,7 +11,7 @@ import { AuthCredentialDto } from './dto/auth-credential.dto';
 import { AuthCredentialSignInDto } from './dto/auth-credential-signin.dto';
 import { JwtPayload } from './jwt/jwt-payload.interface';
 import { UserStatus } from '../user/enums/user-status.enum';
-import { messages } from '../../messages.const';
+import { messages } from '../utils/constants/messages.const';
 import { AppLogger } from '../logger/logger';
 
 @Injectable()

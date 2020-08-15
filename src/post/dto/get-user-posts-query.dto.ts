@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsNotEmpty, IsPositive, Min, Max, IsEnum, IsOptional, IsBoolean, IsBooleanString, IsString } from 'class-validator';
 import { PostSortBy } from '../enums/sort-post.enum';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class UserPostsQuery {
 

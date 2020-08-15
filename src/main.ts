@@ -1,6 +1,5 @@
 declare const module: any;
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
 
 import {
   FastifyAdapter,
@@ -18,11 +17,18 @@ import {
   MULTIPART_OPTIONS,
 } from './utils/constants/security.constant';
 import { AppLogger } from './logger/logger';
-
+import { CONFIG } from './config';
+const isProd = false; // not working. change it manually
+let config: Config;
+if (isProd) {
+  // config = CONFIG.prod;
+} else {
+  config = CONFIG.dev;
+}
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    new FastifyAdapter(config.FASTIFY_OPTIONS),
   );
   mongoose.set('useCreateIndex', true);
   app.register(helmet, HELMET_OPTIONS);
@@ -30,11 +36,16 @@ async function bootstrap() {
   app.register(multipart, MULTIPART_OPTIONS);
   app.useLogger(app.get(AppLogger));
   app.enableCors();
-  await app.listen(3000, 'localhost');
-
+  await app.listen(config.PORT, config.ADDRESS);
   if (module.hot) {
     module.hot.accept();
     module.hot.dispose(() => app.close());
   }
 }
 bootstrap();
+
+interface Config {
+  FASTIFY_OPTIONS: { https: { key: Buffer, cert: Buffer } };
+  ADDRESS: string;
+  PORT: number;
+}

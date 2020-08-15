@@ -1,6 +1,6 @@
 import { PasswordBase } from './password-base.dto';
 import { IsString, MinLength, MaxLength, Matches } from 'class-validator';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class ChangePasswordDto extends PasswordBase {
     @IsString({ message: messages.validator.IS_STRING })

@@ -2,34 +2,30 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  OnGatewayDisconnect,
   MessageBody,
   ConnectedSocket,
   OnGatewayConnection,
   WsException,
-  BaseWsExceptionFilter,
 } from '@nestjs/websockets';
 import { UseGuards, UseFilters, ValidationPipe, BadRequestException, Get } from '@nestjs/common';
 import { JoinChatDto } from './dto/join-chat.dto';
 import { MessageChatDto } from './dto/message.dto';
 import { ServerEvent, ClientEvent } from '../shared/socket-events.enum';
-import { ChatRoom, ChatRoomMessage } from '../shared/chatroom.interface';
+import { ChatRoom, ChatRoomMessage, chatRooms } from '../shared/chatroom.interface';
 import { Server, Socket } from 'socket.io';
 import { LATEST_MESSAGE_COUNT } from './constant/latest-message.constant';
-import { WsAuthGuard } from '../auth/guards/ws-auth-guard.guard';
 import { JwtService } from '@nestjs/jwt';
-import { GetUser } from '../user/decorators/get-user.decorator';
 import { User } from '../user/interfaces/user.interface';
 import { WsExceptionsFilter } from './filter/ws-exception.filter';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
-@UseGuards(WsAuthGuard)
 @UseFilters(WsExceptionsFilter)
 @WebSocketGateway(8080)
 export class EventsGateway implements OnGatewayConnection {
   @WebSocketServer()
   server: Server;
-  chatRooms = new Map<string, ChatRoom>();
-  constructor(private jwt: JwtService) { }
+  constructor(private jwt: JwtService, @InjectModel('User') private userModel: Model<User>) { }
   handleConnection(client: Socket) {
     this._handleDisconnecting(client);
     this._validateToken(client);
@@ -37,10 +33,11 @@ export class EventsGateway implements OnGatewayConnection {
   private _handleDisconnecting(client: Socket) {
     client.on('disconnecting', () => {
       const sid = Object.keys(client.rooms)[0];
-      const chatRoom = this.chatRooms.get(sid);
+      const chatRoom = chatRooms.get(sid);
       if (chatRoom) {
         chatRoom.usersCount -= 1;
-        client.broadcast.to(sid).emit(ClientEvent.ONLINE_CHAT, chatRoom.usersCount);
+        chatRooms.set(sid, chatRoom);
+        client.to(sid).broadcast.emit(ClientEvent.ONLINE_CHAT, chatRoom.usersCount);
       }
     });
   }
@@ -56,8 +53,10 @@ export class EventsGateway implements OnGatewayConnection {
    * @param client
    */
   @SubscribeMessage(ServerEvent.JOIN_CHAT)
-  async joinChat(@MessageBody(ValidationPipe) joinChatDto: JoinChatDto, @ConnectedSocket() client: Socket, @GetUser() user) {
+  async joinChat(@MessageBody(ValidationPipe) joinChatDto: JoinChatDto, @ConnectedSocket() client: Socket) {
     const { sid } = joinChatDto;
+    const username = this._validateToken(client)['username'];
+    const user = await this.userModel.findOne({ username });
     if (this._isUserRegistered(sid, user)) {
       client.leaveAll();
       const chatRoom = this._getChatRoom(sid);
@@ -77,18 +76,17 @@ export class EventsGateway implements OnGatewayConnection {
    * @param client
    */
   @SubscribeMessage(ServerEvent.SEND_MESSAGE_CHAT)
-  sendMessageChat(
-    @MessageBody() messageDto: MessageChatDto,
+  async sendMessageChat(
+    @MessageBody(ValidationPipe) messageDto: MessageChatDto,
     @ConnectedSocket() client: Socket,
-    @GetUser() user: User,
   ) {
     const { message, sid } = messageDto;
-    const { username } = user;
+    const username = this._validateToken(client)?.['username'];
     const chatRoom = this._getChatRoom(sid);
     const latestMessages = chatRoom.latestMessages;
     latestMessages.push({ username, message }); // save message with username
-    latestMessages.splice(0, latestMessages.length - LATEST_MESSAGE_COUNT); // delete out of range messages from array 
-    client.broadcast.to(sid).emit(ClientEvent.CHAT, { username, message } as ChatRoomMessage); // broadcast the message to the room
+    latestMessages.splice(0, latestMessages.length - LATEST_MESSAGE_COUNT); // delete out of range messages from array
+    client.to(sid).broadcast.emit(ClientEvent.CHAT, { username, message }); // broadcast the message to the room
   }
 
   /**
@@ -96,12 +94,12 @@ export class EventsGateway implements OnGatewayConnection {
    * @param sid social id (room id)
    */
   private _getChatRoom(sid: string) {
-    const chatRoom = this.chatRooms.get(sid);
+    const chatRoom = chatRooms.get(sid);
     if (chatRoom) {
       return chatRoom;
     } else {
-      this.chatRooms.set(sid, { usersCount: 0, latestMessages: [] });
-      return this.chatRooms.get(sid);
+      chatRooms.set(sid, { usersCount: 0, latestMessages: [] });
+      return { usersCount: 0, latestMessages: [] };
     }
   }
 
@@ -127,6 +125,7 @@ export class EventsGateway implements OnGatewayConnection {
     try {
       const token = client.handshake.query.token;
       this.jwt.verify(token);
+      return this.jwt.decode(token);
     } catch {
       client.disconnect();
     }

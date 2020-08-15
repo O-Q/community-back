@@ -5,7 +5,7 @@ import {
 } from '../../user/enums/social-user-role.enum';
 import { SocialStatus } from '../enums/social-status.enum';
 import { SocialType } from '../../user/interfaces/user.interface';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export const RegisteredUserSchema = new Schema(
   {
@@ -61,20 +61,24 @@ export const SocialSchema = new Schema(
     avatar: { type: String },
     banner: { type: String },
     title: { type: String },
+    activityScore: { type: Number, default: 0 },
     colors: { type: ColorsSchema },
     description: { type: String },
+    aboutMe: { type: String },
     users: {
       type: [RegisteredUserSchema],
     },
     tags: {
-      type: [{ type: String, index: true, unique: true }],
+      type: [String],
       default: [],
+      index: true,
       // max array length is 5
       validate: [arrayLimit, `{PATH} ${messages.db.LIMIT_EXCEEDED} ${TAGS_LIMIT}`],
 
     },
     flairs: {
-      type: [{ type: String, index: true, unique: true }],
+      type: [String],
+      index: true,
       default: [],
       // max array length is 20
       validate: [arrayLimit, `{PATH} ${messages.db.LIMIT_EXCEEDED} ${FLAIRS_LIMIT}`],

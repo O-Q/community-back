@@ -6,3 +6,6 @@ export interface ChatRoomMessage {
     username: string;
     message: string;
 }
+
+
+export const chatRooms = new Map<string, ChatRoom>();

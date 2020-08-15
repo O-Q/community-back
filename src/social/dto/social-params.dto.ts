@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsMongoId } from 'class-validator';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class SocialParams {
   @IsNotEmpty({ message: messages.validator.IS_NOT_EMPTY })

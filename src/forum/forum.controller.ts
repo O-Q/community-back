@@ -30,6 +30,7 @@ import { SocialGuard } from './guards/forum.guard';
 import { SocialUserRole } from '../user/enums/social-user-role.enum';
 import { GetSocial } from '../social/decorators/get-social.decorator';
 import { Forum } from './interfaces/forum.interface';
+import { userInfo } from 'os';
 
 @Controller('forum')
 export class ForumController {
@@ -90,8 +91,8 @@ export class ForumController {
   @Roles([SocialUserRole.CREATOR, SocialUserRole.MODERATOR])
   @UseGuards(AuthGuard(), SocialGuard)
   @Delete('/users/:sid/:uid')
-  removeUser(@Param(ValidationPipe) socialParams: SocialUserParams) {
-    return this.forumService.removeUser(socialParams.sid, socialParams.uid);
+  removeUser(@Param(ValidationPipe) socialParams: SocialUserParams, @GetUser() user: User) {
+    return this.forumService.removeUser(socialParams.sid, socialParams.uid, user);
   }
 
   @UseGuards(AuthGuard(), SocialGuard)

@@ -9,7 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 import { AuthCredentialSignInDto } from '../../auth/dto/auth-credential-signin.dto';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class UserDto extends AuthCredentialSignInDto {
 

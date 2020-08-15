@@ -1,5 +1,5 @@
 import { MinLength, IsString, MaxLength, Matches } from 'class-validator';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class AuthCredentialSignInDto {
   @IsString({ message: messages.validator.IS_STRING })

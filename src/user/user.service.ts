@@ -10,7 +10,7 @@ import { STATIC_FILE_PATH_FRONT, STATIC_FILE_PATH_BACK } from '../config/static-
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { isImageFile, getFileFormat, resizeImage } from '../utils/functions/image.func';
-import { messages } from '../../messages.const';
+import { messages } from '../utils/constants/messages.const';
 
 @Injectable()
 export class UserService {
@@ -26,8 +26,8 @@ export class UserService {
     const userInfo = await this.userModel.findOne({ username }, { __v: 0, password: 0, socials: 0, roles: 0 }).lean() as any;
     if (userInfo) {
       this._filterByPrivacy(userInfo, user);
-      if (userInfo._id.toHexString() !== user.id) {
-        userInfo.isFollowing = user.following.some(uid => uid.toHexString() === userInfo._id.toHexString());
+      if (userInfo._id.toHexString() !== user?.id) {
+        userInfo.isFollowing = user?.following.some(uid => uid.toHexString() === userInfo._id.toHexString());
       }
       return userInfo;
     } else {
@@ -36,7 +36,7 @@ export class UserService {
   }
 
   _filterByPrivacy(searched: User, searcher: User) {
-    if (searcher.username === searched.username) {
+    if (searcher?.username === searched.username) {
       return;
     }
     const isFollower = searcher?.following?.some(id => id.toHexString() === searched._id.toHexString());

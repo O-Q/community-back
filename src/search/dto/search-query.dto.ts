@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsNumberString, IsOptional, IsEnum } from 'class-validator';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 import { PostSortBy } from '../../post/enums/sort-post.enum';
 
 export class SearchHomepageQuery {

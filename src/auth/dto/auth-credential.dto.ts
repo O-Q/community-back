@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import { UserRole } from '../../user/enums/user-roles.enum';
 import { AuthCredentialSignInDto } from './auth-credential-signin.dto';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class AuthCredentialDto extends AuthCredentialSignInDto {
   @IsOptional()

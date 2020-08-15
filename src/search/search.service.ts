@@ -21,7 +21,7 @@ export class SearchService {
         @InjectModel('Social') private readonly socialModel: Model<Forum | Blog>,
         @InjectModel('Post') private readonly postModel: Model<Post>,
         private logger: AppLogger) {
-        this.logger.setContext('SearchService');
+        this.logger.setContext(SearchService.name);
     }
     async searchSocial(query: SocialQuery) {
 
@@ -60,25 +60,26 @@ export class SearchService {
     async getHomepageSocialData(query) {
         const skipItems = { $skip: calcSkippedPage(+query.itemsPerPage, +query.page) };
         const limitItems = { $limit: +query.itemsPerPage };
-        const selectItems = { $project: { name: 1, title: 1, updatedAt: 1 } };
+        const selectItems = { $project: { name: 1, title: 1, updatedAt: 1, activityScore: 1 } };
+        const sortByActivityScore = { $sort: { activityScore: -1 } };
         const result = await this.socialModel
             .aggregate().facet(
                 {
-                    blogs: [{ $match: { type: SocialType.BLOG, isPrivate: false } }, skipItems, limitItems, selectItems],
-                    forums: [{ $match: { type: SocialType.FORUM, isPrivate: false } }, skipItems, limitItems, selectItems]
+                    blogs: [{ $match: { type: SocialType.BLOG, isPrivate: false } }, sortByActivityScore, skipItems, limitItems, selectItems],
+                    forums: [{ $match: { type: SocialType.FORUM, isPrivate: false } }, sortByActivityScore, skipItems, limitItems, selectItems]
                 },
             );
         return result[0];
     }
-    async getHomepagePostData(query: SearchHomepageQuery, user: User) {
-        const NotPrivate = { $match: { isPrivate: { $not: { $eq: true } } } };
+    async getHomepagePostData(query: SearchHomepageQuery, user: User): Promise<{ length: number, posts: Post[] }> {
+        const NotPrivateReplay = { $match: { isPrivate: { $not: { $eq: true } }, replyTo: { $exists: false } } };
         const skipItems = { $skip: calcSkippedPage(+query.itemsPerPage, +query.page) };
         const limitItems = { $limit: +query.itemsPerPage };
         const removeJunks = user ? { $project: { __v: 0 } } : { $project: { __v: 0, likedBy: 0, dislikedBy: 0 } };
         const result = (await this.postModel
             .aggregate().facet({
                 posts: [
-                    NotPrivate,
+                    NotPrivateReplay,
                     ...this._sortPosts(query.sortBy),
                     skipItems,
                     limitItems,
@@ -86,7 +87,7 @@ export class SearchService {
                     ...POST_JOIN_AUTHOR,
                     removeJunks,
                 ],
-                length: [NotPrivate, ...this._sortPosts(query.sortBy), { $count: 'length' }],
+                length: [NotPrivateReplay, ...this._sortPosts(query.sortBy), { $count: 'length' }],
             },
             ))[0];
 
@@ -100,7 +101,7 @@ export class SearchService {
                 p.text = clip(p.text, 300, { html: true, breakWords: true, maxLines: 5 });
             });
         }
-        result.length = result.length[0].length;
+        result.length = result?.length[0]?.length;
         return result;
     }
     _sortPosts(sortBy: PostSortBy) {

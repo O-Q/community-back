@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { WidgetNames } from '../shared/widget-list.enum';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, SocialType } from '../user/interfaces/user.interface';
@@ -13,10 +12,11 @@ import * as jimp from 'jimp';
 import { File } from 'fastify-multer/lib/interfaces';
 import { InfoDto } from '../social/dto/info.dto';
 import { resizeImage, isImageFile, getFileFormat } from '../utils/functions/image.func';
-import { messages } from '../../messages.const';
-import { async } from 'rxjs/internal/scheduler/async';
+import { messages } from '../utils/constants/messages.const';
 import { Post } from '../post/interfaces/post.interface';
-import { DEFAULT_WIDGETS } from '../utils/constants/widgets.constant';
+import { ActivityScore } from '../utils/constants/activity-score.constant';
+import { blogWidgetList, isWidgetsValid } from '../utils/constants/widgets.constant';
+import { Widget } from '../forum/interfaces/forum.interface';
 
 @Injectable()
 export class BlogService {
@@ -31,19 +31,21 @@ export class BlogService {
         const blogs = await this.blogModel.aggregate().match({ name: blogName }).project({ __v: 0, posts: 0 })
             .addFields({
                 users: {
-                    $filter: { input: '$users', as: 'user', cond: { $in: ['$$user.role', [SocialUserRole.CREATOR, SocialUserRole.MODERATOR]] } }
+                    $filter: { input: '$users', as: 'user', cond: { $in: ['$$user.role', [SocialUserRole.CREATOR, SocialUserRole.MODERATOR]] } },
                 },
             })
             .lookup({ from: 'users', localField: 'users.user', foreignField: '_id', as: 'users' })
             .addFields({ admins: '$users.username' })
-            .project({ users: 0 });
+            .project({ users: 0, activityScore: 0 });
         const blog = blogs?.[0];
 
         if (blog) {
+
             blog.isUserRegistered = user?.socials.some(s => s.social.toHexString() === blog._id.toHexString()) || false;
             setImmediate(async () => { // set notification to 0
+                await this.blogModel.findByIdAndUpdate(blog._id, { $inc: { activityScore: ActivityScore.VIEW_SOCIAL } });
                 if (blog.isUserRegistered) {
-                    await user.updateOne({ $set: { 'socials.$[el].notifications': 0 } }, { arrayFilters: [{ 'el.social': blog._id }] });
+                    await user.updateOne({ $set: { 'socials.$[el].notifications': [] } }, { arrayFilters: [{ 'el.social': blog._id }] });
                 }
             });
             return blog;
@@ -60,7 +62,7 @@ export class BlogService {
                 ...blogDto,
                 type: SocialType.BLOG,
                 users: [{ user: user._id, role: SocialUserRole.CREATOR }],
-                widgets: DEFAULT_WIDGETS,
+                widgets: blogWidgetList,
             })
             .catch(DBErrorHandler);
 
@@ -70,7 +72,7 @@ export class BlogService {
         });
 
         await user.save().catch(DBErrorHandler);
-        return createdBlog._id;
+        return await this.getBlogByName(blogDto.name, user);
     }
     async deleteBlog(sid: string) {
         setImmediate(async () => {
@@ -85,11 +87,22 @@ export class BlogService {
         const social = await this.blogModel.findOne({ name: sname });
         const userSocial = user.socials.find(s => s.social.toHexString() === social.id);
         if ([SocialUserRole.CREATOR].includes(userSocial.role)) {
-            const { description, flairs, isPrivate, status, title, colors } = info;
-            return await social.updateOne({ title, flairs, description, isPrivate, status, colors });
+            const { description, flairs, isPrivate, status, aboutMe, title, colors } = info;
+            return await social.updateOne({ title, flairs, description, aboutMe, isPrivate, status, colors });
         } else {
             throw new ForbiddenException(messages.common.NOT_PERMITTED);
 
+        }
+    }
+
+    async updateWidgets(user: User, sname: string, widgets: Widget[]) {
+        const social = await this.blogModel.findOne({ name: sname });
+        const userSocial = user.socials.find(s => s.social.toHexString() === social.id);
+
+        if ([SocialUserRole.CREATOR].includes(userSocial.role) && isWidgetsValid(widgets, SocialType.BLOG)) {
+            return await social.updateOne({ widgets });
+        } else {
+            throw new ForbiddenException(messages.common.NOT_PERMITTED);
         }
     }
     async updateImage(user: User, sname: string, file: File, imageType: 'banner' | 'avatar') {
@@ -113,11 +126,15 @@ export class BlogService {
                 }
                 return { link: address };
             } else {
-                throw new BadRequestException(`MimeType ${messages.common.INVALID}`);
+                throw new BadRequestException(`فرمت تصویر ${messages.common.INVALID}`);
             }
         } else { // user is not creator
             throw new ForbiddenException(messages.common.NOT_PERMITTED);
         }
+    }
+
+    async getAllWidgetList(): Promise<Widget[]> {
+        return blogWidgetList;
     }
 
     async removePhoto(sname, fileType: 'banner' | 'avatar') {

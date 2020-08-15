@@ -1,4 +1,5 @@
 import { Schema, SchemaTypes } from 'mongoose';
+import { SocialType } from '../../user/interfaces/user.interface';
 
 export const PostSchema = new Schema(
   {
@@ -14,6 +15,7 @@ export const PostSchema = new Schema(
     replyTo: { type: SchemaTypes.ObjectId, ref: 'Post', index: true },
     views: { type: Number, default: 0 },
     comment: { type: Number, default: 0 },
+    socialType: { type: String, enum: [SocialType.BLOG, SocialType.FORUM] },
     flairs: { type: [{ type: String, index: true }] },
   },
   { timestamps: true },

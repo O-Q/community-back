@@ -12,7 +12,7 @@ export class PostPrivacyGuard implements CanActivate {
         const request = context.switchToHttp().getRequest();
         const username = request.query.u;
         const searcher = request.user;
-        if (username === searcher.username) {
+        if (username === searcher?.username) {
             return true;
         }
         const searched = await this.userModel.findOne({ username }, { privacy: 1 }).lean();

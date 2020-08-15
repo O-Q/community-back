@@ -26,5 +26,6 @@ export interface Widget {
   readonly name: string;
   readonly inputs?: Array<{ value: any, type: string, title: string }>;
   readonly registeredToShow: boolean;
+  readonly type: 'all' | 'blog' | 'forum';
   readonly viewValue?: string;
 }

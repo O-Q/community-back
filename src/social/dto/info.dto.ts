@@ -1,6 +1,6 @@
 import { SocialStatus } from '../enums/social-status.enum';
 import { IsString, IsNotEmpty, IsBase64, IsBoolean, IsIn, IsOptional, IsArray } from 'class-validator';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class InfoDto {
 
@@ -8,6 +8,9 @@ export class InfoDto {
     @IsString({ message: messages.validator.IS_STRING })
     description: string;
 
+    @IsOptional()
+    @IsString({ message: messages.validator.IS_STRING })
+    aboutMe: string;
 
     @IsNotEmpty({ message: messages.validator.IS_NOT_EMPTY })
     @IsString({ message: messages.validator.IS_STRING })
@@ -22,6 +25,7 @@ export class InfoDto {
 
     @IsIn([SocialStatus.ACTIVE, SocialStatus.INACTIVE])
     status: SocialStatus;
+
 
     colors?: any;
 }

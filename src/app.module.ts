@@ -10,6 +10,7 @@ import { BlogModule } from './blog/blog.module';
 import { SearchModule } from './search/search.module';
 import { ScheduledModule } from './scheduled/scheduled.module';
 import { LoggerModule } from './logger/logger.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { LoggerModule } from './logger/logger.module';
     SearchModule,
     ScheduledModule,
     LoggerModule,
-  ],
+    ScheduleModule.forRoot(),
+  ]
 })
 export class AppModule { }

@@ -10,13 +10,18 @@ import {
   Patch,
   Query,
   Req,
+  Inject,
+  Headers,
+  UseInterceptors,
+  UploadedFiles,
+  UploadedFile,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateReplyPostDto } from './dto/reply-post.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../user/decorators/get-user.decorator';
-import { User } from '../user/interfaces/user.interface';
+import { User, SocialType } from '../user/interfaces/user.interface';
 import { PostParams, ReplyPostParams } from './dto/post-params.dto';
 import { EditPostDto } from './dto/edit-post.dto';
 import { SocialGuard } from '../forum/guards/forum.guard';
@@ -26,7 +31,9 @@ import { SocialParams } from '../social/dto/social-params.dto';
 import { UserPostsQuery } from './dto/get-user-posts-query.dto';
 import { ReactionDto } from './dto/react.dto';
 import { PostPrivacyGuard } from './guards/privacy.guard';
-
+import { FileInterceptor, AnyFilesInterceptor, FilesInterceptor } from '../utils/multer';
+import { File } from 'fastify-multer/lib/interfaces';
+import { SocialTypes } from './../auth/decorators/socialType.decorator';
 /**
  * ✔ ❗ 1,2. Get post (with and without filter) by social id. for now subject and text filtered
  * ✔ ❗ 3. Create Post by social id
@@ -51,15 +58,26 @@ export class PostController {
     }
   }
 
-  @UseGuards(AuthGuard(), PostPrivacyGuard)
+  @UseGuards(PostPrivacyGuard)
   @Get('/user')
   getUserPosts(
     @GetUser() user: User,
     @Query(ValidationPipe) userPostsQuery: UserPostsQuery,
   ) {
-    console.log(userPostsQuery);
-
     return this.postService.getUserPosts(userPostsQuery, user);
+  }
+
+  @UseGuards()
+  @Post('/upload')
+  @UseInterceptors(FileInterceptor('upload'))
+  uploadImage(
+    @GetUser() user: User,
+    @Headers() headers,
+    @UploadedFile() file: File,
+  ) {
+    const socialType = headers.social_type;
+    const sname = headers.sname;
+    return this.postService.uploadImage(user, socialType, sname, file);
   }
   @UseGuards(AuthGuard(), SocialGuard)
   @Post('/social/:sid')
@@ -101,6 +119,7 @@ export class PostController {
   //   );
   // }
 
+  @SocialTypes(SocialType.FORUM)
   @UseGuards(AuthGuard(), SocialGuard)
   @Post('/i/:pid/social/:sid/reply')
   createReplyPostBySocialName(
@@ -120,9 +139,10 @@ export class PostController {
   @Delete('/i/:pid')
   deletePostById(
     @Param(ValidationPipe) postParams: PostParams,
+    @Query('socialType') socialType: SocialType,
     @GetUser() user: User,
   ) {
-    return this.postService.deletePostById(postParams.pid, user);
+    return this.postService.deletePostById(postParams.pid, user, socialType);
   }
 
 

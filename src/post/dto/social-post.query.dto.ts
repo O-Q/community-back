@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PostSortBy } from '../enums/sort-post.enum';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class SocialPostQuery {
 
@@ -34,7 +34,7 @@ export class SocialPostQuery {
 
   @IsOptional()
   @IsString({ message: messages.validator.IS_STRING })
-  text: string;
+  text?: string;
 
   @IsOptional()
   @IsEnum(PostSortBy)

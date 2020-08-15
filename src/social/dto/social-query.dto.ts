@@ -9,7 +9,7 @@ import {
   IsNumberString,
 } from 'class-validator';
 import { SortByForum } from '../enums/sort-social.enum';
-import { messages } from '../../../messages.const';
+import { messages } from '../../utils/constants/messages.const';
 
 export class SocialQuery {
   // @IsNumber()

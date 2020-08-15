@@ -70,4 +70,10 @@ export class BlogController {
   removeAvatar(@Query(ValidationPipe) socialQuery: SocialNameQuery) {
     return this.blogService.removePhoto(socialQuery.n, 'avatar');
   }
+
+  @UseGuards(AuthGuard())
+  @Get('/widget/default')
+  getAllDefaultWidget() {
+    return this.blogService.getAllWidgetList();
+  }
 }

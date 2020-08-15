@@ -27,16 +27,18 @@ import * as jimp from 'jimp';
 import { File } from 'fastify-multer/lib/interfaces';
 import { getFileFormat, isImageFile, resizeImage } from '../utils/functions/image.func';
 import { SocialUserStatus } from '../user/enums/social-user-status.enum';
-import { messages } from '../../messages.const';
+import { messages } from '../utils/constants/messages.const';
 import { Post } from '../post/interfaces/post.interface';
-import { DEFAULT_WIDGETS } from '../utils/constants/widgets.constant';
+import { forumWidgetList, isWidgetsValid } from '../utils/constants/widgets.constant';
+import { ActivityScore } from '../utils/constants/activity-score.constant';
+import { NotificationType } from '../user/enums/notification.enum';
 
 @Injectable()
 export class ForumService {
   constructor(
     @InjectModel('Social') private readonly forumModel: Model<Forum>,
     @InjectModel('User') private readonly userModel: Model<User>,
-    @InjectModel('User') private readonly postModel: Model<Post>,
+    @InjectModel('Post') private readonly postModel: Model<Post>,
 
 
   ) { }
@@ -80,10 +82,20 @@ export class ForumService {
     const forum = forums?.[0];
 
     if (forum) {
-      forum.isUserRegistered = user?.socials.some(s => s.social.toHexString() === forum._id.toHexString()) || false;
+      forum.isUserRegistered = user?.socials.some(s => {
+        if (s.social.toHexString() === forum._id.toHexString()) {
+          forum.role = s.role;
+          forum.writeAccess = s.writeAccess;
+          forum.status = s.status;
+          return true;
+        }
+        return false;
+      }) || false;
+
       setImmediate(async () => {
+        await this.forumModel.findByIdAndUpdate(forum._id, { $inc: { activityScore: ActivityScore.VIEW_SOCIAL } });
         if (forum.isUserRegistered) {
-          await user.updateOne({ $set: { 'socials.$[el].notifications': 0 } }, { arrayFilters: [{ 'el.social': forum._id }] });
+          await user.updateOne({ $set: { 'socials.$[el].notifications': [] } }, { arrayFilters: [{ 'el.social': forum._id }] });
         }
       });
       return forum;
@@ -98,7 +110,7 @@ export class ForumService {
         ...forumDto,
         type: SocialType.FORUM,
         users: [{ user: user._id, role: SocialUserRole.CREATOR }],
-        widgets: DEFAULT_WIDGETS,
+        widgets: forumWidgetList,
       })
       .catch(DBErrorHandler);
 
@@ -108,7 +120,7 @@ export class ForumService {
     });
 
     await user.save().catch(DBErrorHandler);
-    return createdForum._id;
+    return await this.getForumByName(forumDto.name, user);
   }
 
   async getForumUsers(forum: Forum) {
@@ -127,34 +139,54 @@ export class ForumService {
   }
 
   async updateForumUsers(sid: string, user: User, users: any[]) {
-    // TODO: (maybe needed someday) can send all users after updating 
     users.forEach(async (u) => {
       const { username, role, writeAccess, status } = u;
-      await this.userModel.findOneAndUpdate({ username, 'socials.social': sid }, {
+      await this.userModel.updateOne({ username, 'socials.social': sid }, {
         'socials.$.role': role,
         'socials.$.status': status,
         'socials.$.writeAccess': writeAccess,
+      }).lean();
+      setImmediate(async () => {
+        const forum = await this.forumModel.findOneAndUpdate({ '_id': sid, 'users.user': user._id }, { $set: { 'users.$.role': role } }).lean();
+        const moderators = this._getAllModerators(forum.users, user);
+        await this.updateNotifications({
+          type: NotificationType.SOCIAL_MANAGEMENT,
+          message: `دسترسی کاربران توسط ${user.username} در انجمن ${forum.name}  تغییر یافت`, sid
+        }, forum._id, moderators);
       });
     });
     return { result: 'DONE' };
   }
 
-  async removeUser(sid: string, uid: string) {
-    await this.userModel.findByIdAndUpdate(uid, { $pull: { socials: { social: Types.ObjectId(sid) } } });
-    await this.forumModel.findByIdAndUpdate(sid, { $pull: { users: { user: Types.ObjectId(uid) } } });
+  async removeUser(sid: string, uid: string, user) {
+    const deletedUser = await this.userModel.findByIdAndUpdate(uid, { $pull: { socials: { social: Types.ObjectId(sid) } } });
+    const forum = await this.forumModel.findByIdAndUpdate(sid,
+      {
+        $pull: { users: { user: Types.ObjectId(uid) } },
+        $inc: { activityScore: ActivityScore.JOIN_LEAVE_USER * -1 },
+      });
+
+    setImmediate(async () => {
+      await this.updateNotifications({
+        type: NotificationType.SOCIAL_MANAGEMENT,
+        message: `${deletedUser.username} توسط ${user.username} از انجمن ${forum.name} حذف شد.`,
+        sid: forum.id,
+      }, sid, this._getAllModerators(forum.users, user));
+    });
     return { result: 'DONE' };
   }
   async updateWidgets(user: User, sname: string, widgets: Widget[]) {
     const social = await this.forumModel.findOne({ name: sname });
     const userSocial = user.socials.find(s => s.social.toHexString() === social.id);
 
-    if ([SocialUserRole.CREATOR].includes(userSocial.role)) {
+    if ([SocialUserRole.CREATOR].includes(userSocial.role) && isWidgetsValid(widgets, SocialType.FORUM)) {
       return await social.updateOne({ widgets });
     } else {
       throw new ForbiddenException(messages.common.NOT_PERMITTED);
     }
   }
 
+  /// ONLY CREATOR
   async updateWidget(user: User, sname: string, widget: Widget) {
     const social = await this.forumModel.findOne({ name: sname });
     const userSocial = user.socials.find(s => s.social.toHexString() === social.id);
@@ -171,7 +203,14 @@ export class ForumService {
     const userSocial = user.socials.find(s => s.social.toHexString() === social.id);
     if ([SocialUserRole.CREATOR].includes(userSocial.role)) {
       const { title, description, flairs, isPrivate, status, colors } = info;
-      return await social.updateOne({ title, flairs, description, isPrivate, status, colors });
+      return await social.updateOne({ title, flairs, description, isPrivate, status, colors }).lean().then(async () => {
+        const moderators = this._getAllModerators(social.users, user);
+        await this.updateNotifications({
+          type: NotificationType.SOCIAL_MANAGEMENT,
+          message: `اطلاعات انجمن ${social.name} توسط ${user.username} تغییر یافت.`,
+          sid: social.id,
+        }, social._id, moderators);
+      });
     } else {
       throw new ForbiddenException(messages.common.NOT_PERMITTED);
     }
@@ -188,11 +227,17 @@ export class ForumService {
       };
       // $ne is for safety for the cost of performance
       const forum = await this.forumModel
-        .findByIdAndUpdate(sid, { $addToSet: { users: registeredUser } })
+        .findByIdAndUpdate(sid, { $addToSet: { users: registeredUser }, $inc: { activityScore: ActivityScore.JOIN_LEAVE_USER } })
         .where('users.user')
         .ne(user.id);
       user.socials.push(registeredForum);
       await user.save().catch(DBErrorHandler);
+      setImmediate(async () => {
+        await this.updateNotifications({
+          type: NotificationType.SOCIAL_MANAGEMENT, message: `${user.username} به
+        انجمن ${forum.name} پیوست.`, sid: forum.id,
+        }, sid, this._getAllModerators(forum.users, user));
+      })
       return forum;
     }
   }
@@ -211,13 +256,28 @@ export class ForumService {
   async leaveUserFromForum(sid: string, user: User) {
 
     // TODO: SPECIAL ACTION FOR LEAVING CREATOR
-    await this.forumModel.findByIdAndUpdate(sid, { $pull: { users: { user: user._id } } });
-    await user.updateOne({ $pull: { socials: { social: sid } } });
+    const userRole = user.socials.find(s => s.social.toHexString() === sid).role;
+    if (userRole === SocialUserRole.CREATOR) {
+      throw new ForbiddenException(messages.common.NOT_PERMITTED);
+    } else {
+      await this.forumModel.findByIdAndUpdate(sid,
+        {
+          $pull: { users: { user: user._id } },
+          $inc: { activityScore: ActivityScore.JOIN_LEAVE_USER * -1 },
+        });
+      await user.updateOne({ $pull: { socials: { social: Types.ObjectId(sid) } } });
+    }
   }
   async getAllWidgetList(): Promise<Widget[]> {
-    return DEFAULT_WIDGETS;
+    return forumWidgetList;
   }
 
+
+  private _getAllModerators(users: any[], user: User): string[] {
+    return users
+      .filter(m => [SocialUserRole.MODERATOR, SocialUserRole.CREATOR].includes(m.role) && m.user !== user?._id)
+      .map(m => m.user);
+  }
   // private async _getGroupById(
   //   groupId: string,
   //   option: { lean: boolean } = { lean: true },
@@ -250,6 +310,12 @@ export class ForumService {
           await resizeImage(sAddress, { width: 300, height: jimp.AUTO });
           await forum.updateOne({ avatar: address });
         }
+        setImmediate(async () => {
+          const t = imageType === 'banner' ? 'بنر' : 'آواتار';
+          await this.updateNotifications(
+            { type: NotificationType.SOCIAL_MANAGEMENT, message: `${t} انجمن ${sname} توسط ${user.username} بروزرسانی شد.`, sid: forum.id },
+            forum._id, this._getAllModerators(forum.users, user));
+        })
         return { link: address };
       } else {
         throw new BadRequestException(`MimeType ${messages.common.INVALID}`);
@@ -267,6 +333,19 @@ export class ForumService {
     }
     return await this.forumModel.findOneAndUpdate({ name: sname }, { [fileType]: null });
 
+  }
+
+  private updateNotifications(notification: { type: string, message: string, pid?: string, sid?: string }, sid: string, users: string[]) {
+    return this.userModel.updateMany(
+      { _id: { $in: users } },
+      {
+        $push:
+        {
+          'socials.$[el].notifications': notification,
+        },
+      },
+      { arrayFilters: [{ 'el.social': sid }] },
+    );
   }
 
   private async _getNewestForums(
