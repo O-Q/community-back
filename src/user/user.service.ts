@@ -133,7 +133,7 @@ export class UserService {
   async updateImage(user: User, file: File, imageType: 'banner' | 'avatar') {
     if (isImageFile(file)) {
       const type = getFileFormat(file);
-      const address = `${STATIC_FILE_PATH_FRONT}/user/${imageType}/${user.username}.${type}`;
+      const address = `${STATIC_FILE_PATH_FRONT}/user/${imageType}/${user.username}.${type}?${Date.now()}`;
       const sAddress = `${STATIC_FILE_PATH_BACK}/user/${imageType}/${user.username}.${type}`;
       fs.writeFileSync(sAddress, file.buffer);
       if (imageType === 'banner') {

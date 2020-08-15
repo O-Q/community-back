@@ -300,7 +300,7 @@ export class ForumService {
     if ([SocialUserRole.CREATOR].includes(userSocial.role)) {
       if (isImageFile(file)) {
         const type = getFileFormat(file);
-        const address = `${STATIC_FILE_PATH_FRONT}/forum/${imageType}/${sname}.${type}`;
+        const address = `${STATIC_FILE_PATH_FRONT}/forum/${imageType}/${sname}.${type}?${Date.now()}`;
         const sAddress = `${STATIC_FILE_PATH_BACK}/forum/${imageType}/${sname}.${type}`;
         fs.writeFileSync(sAddress, file.buffer);
         if (imageType === 'banner') {

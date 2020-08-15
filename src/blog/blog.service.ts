@@ -114,7 +114,7 @@ export class BlogService {
         if ([SocialUserRole.CREATOR].includes(userSocial.role)) {
             if (isImageFile(file)) {
                 const type = getFileFormat(file);
-                const address = `${STATIC_FILE_PATH_FRONT}/blog/${imageType}/${sname}.${type}`;
+                const address = `${STATIC_FILE_PATH_FRONT}/blog/${imageType}/${sname}.${type}?${Date.now()}`;
                 const sAddress = `${STATIC_FILE_PATH_BACK}/blog/${imageType}/${sname}.${type}`;
                 fs.writeFileSync(sAddress, file.buffer);
                 if (imageType === 'banner') {
