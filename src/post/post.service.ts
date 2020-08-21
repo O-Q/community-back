@@ -219,7 +219,7 @@ export class PostService {
     }
   }
 
-  async uploadImage(user: User, socialType: SocialType, sname: string, file: File) {
+  async uploadImage(sname: string, file: File) {
     if (isImageFile(file)) {
       const type = getFileFormat(file);
       const name = `${sname}-${uuid()}`;

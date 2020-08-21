@@ -11,7 +11,7 @@ export function getUserRole(
 ): SocialUserRole {
   let role: SocialUserRole;
   user.socials.some(rs => {
-    if (rs.social === socialId) {
+    if (rs.social.toHexString() === socialId.toHexString()) {
       role = rs.role;
       return true;
     } else {

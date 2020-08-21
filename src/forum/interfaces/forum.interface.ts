@@ -14,6 +14,7 @@ export interface Forum extends Document {
   readonly rules: RuleSocial[];
   readonly posts: Types.ObjectId[];
   readonly private: boolean;
+  readonly permissionRoles: PermissionRoles;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -28,4 +29,14 @@ export interface Widget {
   readonly registeredToShow: boolean;
   readonly type: 'all' | 'blog' | 'forum';
   readonly viewValue?: string;
+}
+
+export interface PermissionRoles {
+  newPost: boolean;
+  comment: boolean;
+  changeAvatar: boolean;
+  changeBanner: boolean;
+  changeInfo: boolean;
+  changeWidgets: boolean;
+  changeUsers: boolean;
 }

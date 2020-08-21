@@ -7,6 +7,16 @@ import { SocialStatus } from '../enums/social-status.enum';
 import { SocialType } from '../../user/interfaces/user.interface';
 import { messages } from '../../utils/constants/messages.const';
 
+export const DEFAULT_PERMISSION_ROLES = {
+  newPost: true,
+  comment: true,
+  changeAvatar: true,
+  changeBanner: true,
+  changeInfo: true,
+  changeWidgets: true,
+  changeUsers: false,
+};
+
 export const RegisteredUserSchema = new Schema(
   {
     user: {
@@ -53,6 +63,20 @@ export const ColorsSchema = new Schema(
   },
   { _id: false },
 );
+
+export const PermissionRolesSchema = new Schema(
+  {
+    newPost: { type: Boolean },
+    comment: { type: Boolean },
+    changeAvatar: { type: Boolean },
+    changeBanner: { type: Boolean },
+    changeInfo: { type: Boolean },
+    changeWidgets: { type: Boolean },
+    changeUsers: { type: Boolean }
+  },
+  { _id: false },
+);
+
 const TAGS_LIMIT = 5;
 const FLAIRS_LIMIT = 20;
 export const SocialSchema = new Schema(
@@ -65,6 +89,9 @@ export const SocialSchema = new Schema(
     colors: { type: ColorsSchema },
     description: { type: String },
     aboutMe: { type: String },
+    permissionRoles: {
+      type: PermissionRolesSchema, default: DEFAULT_PERMISSION_ROLES,
+    },
     users: {
       type: [RegisteredUserSchema],
     },

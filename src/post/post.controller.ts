@@ -34,6 +34,8 @@ import { PostPrivacyGuard } from './guards/privacy.guard';
 import { FileInterceptor, AnyFilesInterceptor, FilesInterceptor } from '../utils/multer';
 import { File } from 'fastify-multer/lib/interfaces';
 import { SocialTypes } from './../auth/decorators/socialType.decorator';
+import { Permissions } from '../auth/decorators/roles.decorator';
+import { Permission } from '../social/enums/permission-role.enum';
 /**
  * ✔ ❗ 1,2. Get post (with and without filter) by social id. for now subject and text filtered
  * ✔ ❗ 3. Create Post by social id
@@ -67,7 +69,7 @@ export class PostController {
     return this.postService.getUserPosts(userPostsQuery, user);
   }
 
-  @UseGuards()
+  @UseGuards(AuthGuard())
   @Post('/upload')
   @UseInterceptors(FileInterceptor('upload'))
   uploadImage(
@@ -75,10 +77,11 @@ export class PostController {
     @Headers() headers,
     @UploadedFile() file: File,
   ) {
-    const socialType = headers.social_type;
+    // const socialType = headers.social_type;
     const sname = headers.sname;
-    return this.postService.uploadImage(user, socialType, sname, file);
+    return this.postService.uploadImage(sname, file);
   }
+  @Permissions(Permission.NEW_POST)
   @UseGuards(AuthGuard(), SocialGuard)
   @Post('/social/:sid')
   createPostBySocialId(
@@ -120,6 +123,7 @@ export class PostController {
   // }
 
   @SocialTypes(SocialType.FORUM)
+  @Permissions(Permission.COMMENT)
   @UseGuards(AuthGuard(), SocialGuard)
   @Post('/i/:pid/social/:sid/reply')
   createReplyPostBySocialName(

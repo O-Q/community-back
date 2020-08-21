@@ -19,9 +19,9 @@ import {
 import { AppLogger } from './logger/logger';
 import { CONFIG } from './config';
 const isProd = false; // not working. change it manually
-let config: Config;
+let config: Config | any;
 if (isProd) {
-  // config = CONFIG.prod;
+  config = CONFIG.prod;
 } else {
   config = CONFIG.dev;
 }

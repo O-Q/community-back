@@ -8,13 +8,21 @@ export const CONFIG = {
     },
     prod: {
         FASTIFY_OPTIONS: {
-            https: {
-                // key: fs.readFileSync('/etc/letsencrypt/live/api.miakova.ir/privkey.pem'),
-                // cert: fs.readFileSync('/etc/letsencrypt/live/api.miakova.ir/fullchain.pem'),
-            },
+            https: getHttps(),
         },
         ADDRESS: 'api.miakova.ir',
         PORT: 3000,
     },
 };
+
+function getHttps() {
+    try {
+        return {
+            key: fs.readFileSync('/etc/letsencrypt/live/api.miakova.ir/privkey.pem'),
+            cert: fs.readFileSync('/etc/letsencrypt/live/api.miakova.ir/fullchain.pem'),
+        };
+    } catch {
+        return {};
+    }
+}
 

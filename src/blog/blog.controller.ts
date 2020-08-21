@@ -26,7 +26,7 @@ export class BlogController {
     return this.blogService.getBlogByName(socialQuery.n, user);
   }
 
-  @Roles([SocialUserRole.CREATOR])
+  @Roles(SocialUserRole.CREATOR)
   @UseGuards(AuthGuard(), SocialGuard)
   @Delete('/:sid')
   deleteBlog(@Param(ValidationPipe) socialParams: SocialParams) {

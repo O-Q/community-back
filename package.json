@@ -5,7 +5,7 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "build": "rimraf dist && powershell -command \"(Get-content src\\main.ts) | Foreach-Object {$_ -replace 'isProd = false', 'isProd = true'} | Set-Content src\\main.ts\" && tsc -p tsconfig.build.json && powershell -command \"(Get-content src\\main.ts) | Foreach-Object {$_ -replace 'isProd = true', 'isProd = false'} | Set-Content src\\main.ts\"",
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "ts-node -r tsconfig-paths/register src/main.ts",
     "start:dev": "nest build --webpack --webpackPath webpack-hmr.config.js",
