@@ -18,12 +18,11 @@ import {
 } from './utils/constants/security.constant';
 import { AppLogger } from './logger/logger';
 import { CONFIG } from './config';
-const isProd = false; // not working. change it manually
 let config: Config | any;
-if (isProd) {
-  config = CONFIG.prod;
-} else {
+if (process.platform === 'win32') {
   config = CONFIG.dev;
+} else {
+  config = CONFIG.prod;
 }
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(

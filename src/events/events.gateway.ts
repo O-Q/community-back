@@ -7,11 +7,11 @@ import {
   OnGatewayConnection,
   WsException,
 } from '@nestjs/websockets';
-import { UseGuards, UseFilters, ValidationPipe, BadRequestException, Get } from '@nestjs/common';
+import { UseFilters, ValidationPipe } from '@nestjs/common';
 import { JoinChatDto } from './dto/join-chat.dto';
 import { MessageChatDto } from './dto/message.dto';
 import { ServerEvent, ClientEvent } from '../shared/socket-events.enum';
-import { ChatRoom, ChatRoomMessage, chatRooms } from '../shared/chatroom.interface';
+import { chatRooms } from '../shared/chatroom.interface';
 import { Server, Socket } from 'socket.io';
 import { LATEST_MESSAGE_COUNT } from './constant/latest-message.constant';
 import { JwtService } from '@nestjs/jwt';

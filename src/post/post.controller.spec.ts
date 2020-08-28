@@ -65,7 +65,7 @@ describe('PostController', () => {
         it('should delete post by ID', async () => {
             const result = { message: 'test message' };
             jest.spyOn(postService, 'deletePostById').mockImplementation(() => Promise.resolve(result));
-            expect(await postController.deletePostById({ pid: 'test' }, undefined)).toBe(result);
+            expect(await postController.deletePostById({ pid: 'test' }, undefined, undefined)).toBe(result);
         });
     });
 });
