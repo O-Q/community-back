@@ -28,7 +28,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(config.FASTIFY_OPTIONS),
-    { httpsOptions: config.FASTIFY_OPTIONS.https },
+    { httpsOptions: config.FASTIFY_OPTIONS?.https },
   );
   mongoose.set('useCreateIndex', true);
   app.register(helmet, HELMET_OPTIONS);
