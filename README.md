@@ -19,7 +19,7 @@ Chapters on system architecture delve into the technical specifics of the projec
 <br/>
 The report also covers the testing phase, detailing how the software was tested to ensure functionality, reliability, and performance. Various methodologies and tools used for testing are discussed, along with the results obtained.
 
-<b>Conclusions and Recommendations<b/>
+<b>Conclusions and Recommendations</b>
 <br/>
 The final chapter provides a summary of findings, conclusions drawn from the project, and potential recommendations for future work. This section encapsulates the project's outcomes and suggests areas for further research or development.
 
